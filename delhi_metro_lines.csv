@@ -1,0 +1,321 @@
+line,pos,station,group,fixed,circular
+Red,1,Shaheed Sthal (New Bus Adda),Red,FALSE,FALSE
+Red,2,Hindon River,Red,FALSE,FALSE
+Red,3,Arthala,Red,FALSE,FALSE
+Red,4,Mohan Nagar,Red,FALSE,FALSE
+Red,5,Shyam Park,Red,FALSE,FALSE
+Red,6,Major Mohit Sharma Rajendra Nagar,Red,FALSE,FALSE
+Red,7,Raj Bagh,Red,FALSE,FALSE
+Red,8,Shaheed Nagar,Red,FALSE,FALSE
+Red,9,Dilshad Garden,Red,FALSE,FALSE
+Red,10,Jhilmil,Red,FALSE,FALSE
+Red,11,Mansarovar Park,Red,FALSE,FALSE
+Red,12,Shahdara,Red,FALSE,FALSE
+Red,13,Welcome,Red,FALSE,FALSE
+Red,14,Seelampur,Red,FALSE,FALSE
+Red,15,Shastri Park,Red,FALSE,FALSE
+Red,16,Kashmere Gate,Red,FALSE,FALSE
+Red,17,Tis Hazari,Red,FALSE,FALSE
+Red,18,Pulbangash,Red,FALSE,FALSE
+Red,19,Pratap Nagar,Red,FALSE,FALSE
+Red,20,Shastri Nagar,Red,FALSE,FALSE
+Red,21,Inderlok,Red,FALSE,FALSE
+Red,22,Kanhaiya Nagar,Red,FALSE,FALSE
+Red,23,Keshav Puram,Red,FALSE,FALSE
+Red,24,Netaji Subhash Place,Red,FALSE,FALSE
+Red,25,Kohat Enclave,Red,FALSE,FALSE
+Red,26,Madhuban Chowk,Red,FALSE,FALSE
+Red,27,Rohini,Red,FALSE,FALSE
+Red,28,Dr. Baba Saheb Ambedkar Hospital,Red,FALSE,FALSE
+Red,29,Rithala,Red,FALSE,FALSE
+Yellow,1,Samaypur Badli,Yellow,FALSE,FALSE
+Yellow,2,"Rohini Sector 18, 19",Yellow,FALSE,FALSE
+Yellow,3,Haiderpur Badli Mor,Yellow,FALSE,FALSE
+Yellow,4,Jahangirpuri,Yellow,FALSE,FALSE
+Yellow,5,Adarsh Nagar,Yellow,FALSE,FALSE
+Yellow,6,Azadpur,Yellow,FALSE,FALSE
+Yellow,7,Model Town,Yellow,FALSE,FALSE
+Yellow,8,Guru Tegh Bahadur Nagar,Yellow,FALSE,FALSE
+Yellow,9,Vishwavidyalaya,Yellow,FALSE,FALSE
+Yellow,10,Vidhan Sabha,Yellow,FALSE,FALSE
+Yellow,11,Civil Lines,Yellow,FALSE,FALSE
+Yellow,12,Kashmere Gate,Yellow,FALSE,FALSE
+Yellow,13,Chandni Chowk,Yellow,FALSE,FALSE
+Yellow,14,Chawri Bazar,Yellow,FALSE,FALSE
+Yellow,15,New Delhi,Yellow,FALSE,FALSE
+Yellow,16,Rajiv Chowk,Yellow,FALSE,FALSE
+Yellow,17,Patel Chowk,Yellow,FALSE,FALSE
+Yellow,18,Central Secretariat,Yellow,FALSE,FALSE
+Yellow,19,Seva Teerth,Yellow,FALSE,FALSE
+Yellow,20,Lok Kalyan Marg,Yellow,FALSE,FALSE
+Yellow,21,Jor Bagh,Yellow,FALSE,FALSE
+Yellow,22,Dilli Haat - INA,Yellow,FALSE,FALSE
+Yellow,23,AIIMS,Yellow,FALSE,FALSE
+Yellow,24,Green Park,Yellow,FALSE,FALSE
+Yellow,25,Hauz Khas,Yellow,FALSE,FALSE
+Yellow,26,Malviya Nagar,Yellow,FALSE,FALSE
+Yellow,27,Saket,Yellow,FALSE,FALSE
+Yellow,28,Qutab Minar,Yellow,FALSE,FALSE
+Yellow,29,Chhatarpur,Yellow,FALSE,FALSE
+Yellow,30,Sultanpur,Yellow,FALSE,FALSE
+Yellow,31,Ghitorni,Yellow,FALSE,FALSE
+Yellow,32,Arjan Garh,Yellow,FALSE,FALSE
+Yellow,33,Guru Dronacharya,Yellow,FALSE,FALSE
+Yellow,34,Sikanderpur,Yellow,FALSE,FALSE
+Yellow,35,MG Road,Yellow,FALSE,FALSE
+Yellow,36,IFFCO Chowk,Yellow,FALSE,FALSE
+Yellow,37,Millennium City Centre Gurugram,Yellow,FALSE,FALSE
+Blue-Noida,1,Noida Electronic City,Blue,FALSE,FALSE
+Blue-Noida,2,Noida Sector 62,Blue,FALSE,FALSE
+Blue-Noida,3,Noida Sector 59,Blue,FALSE,FALSE
+Blue-Noida,4,Noida Sector 61,Blue,FALSE,FALSE
+Blue-Noida,5,Noida Sector 52,Blue,FALSE,FALSE
+Blue-Noida,6,Noida Sector 34,Blue,FALSE,FALSE
+Blue-Noida,7,Noida City Centre,Blue,FALSE,FALSE
+Blue-Noida,8,Golf Course,Blue,FALSE,FALSE
+Blue-Noida,9,Botanical Garden,Blue,FALSE,FALSE
+Blue-Noida,10,Noida Sector 18,Blue,FALSE,FALSE
+Blue-Noida,11,Noida Sector 16,Blue,FALSE,FALSE
+Blue-Noida,12,Noida Sector 15,Blue,FALSE,FALSE
+Blue-Noida,13,New Ashok Nagar,Blue,FALSE,FALSE
+Blue-Noida,14,Mayur Vihar Extension,Blue,FALSE,FALSE
+Blue-Noida,15,Mayur Vihar-I,Blue,FALSE,FALSE
+Blue-Noida,16,Akshardham,Blue,FALSE,FALSE
+Blue-Noida,17,Yamuna Bank,Blue,FALSE,FALSE
+Blue-Noida,18,Indraprastha,Blue,FALSE,FALSE
+Blue-Noida,19,Supreme Court,Blue,FALSE,FALSE
+Blue-Noida,20,Mandi House,Blue,FALSE,FALSE
+Blue-Noida,21,Barakhamba Road,Blue,FALSE,FALSE
+Blue-Noida,22,Rajiv Chowk,Blue,FALSE,FALSE
+Blue-Noida,23,Ramakrishna Ashram Marg,Blue,FALSE,FALSE
+Blue-Noida,24,Jhandewalan,Blue,FALSE,FALSE
+Blue-Noida,25,Karol Bagh,Blue,FALSE,FALSE
+Blue-Noida,26,Rajendra Place,Blue,FALSE,FALSE
+Blue-Noida,27,Patel Nagar,Blue,FALSE,FALSE
+Blue-Noida,28,Shadipur,Blue,FALSE,FALSE
+Blue-Noida,29,Kirti Nagar,Blue,FALSE,FALSE
+Blue-Noida,30,Moti Nagar,Blue,FALSE,FALSE
+Blue-Noida,31,Ramesh Nagar,Blue,FALSE,FALSE
+Blue-Noida,32,Rajouri Garden,Blue,FALSE,FALSE
+Blue-Noida,33,Tagore Garden,Blue,FALSE,FALSE
+Blue-Noida,34,Subhash Nagar,Blue,FALSE,FALSE
+Blue-Noida,35,Tilak Nagar,Blue,FALSE,FALSE
+Blue-Noida,36,Janakpuri East,Blue,FALSE,FALSE
+Blue-Noida,37,Janakpuri West,Blue,FALSE,FALSE
+Blue-Noida,38,Uttam Nagar East,Blue,FALSE,FALSE
+Blue-Noida,39,Uttam Nagar West,Blue,FALSE,FALSE
+Blue-Noida,40,Nawada,Blue,FALSE,FALSE
+Blue-Noida,41,Dwarka Mor,Blue,FALSE,FALSE
+Blue-Noida,42,Dwarka-Kakrola,Blue,FALSE,FALSE
+Blue-Noida,43,Dwarka Sector 14,Blue,FALSE,FALSE
+Blue-Noida,44,Dwarka Sector 13,Blue,FALSE,FALSE
+Blue-Noida,45,Dwarka Sector 12,Blue,FALSE,FALSE
+Blue-Noida,46,Dwarka Sector 11,Blue,FALSE,FALSE
+Blue-Noida,47,Dwarka Sector 10,Blue,FALSE,FALSE
+Blue-Noida,48,Dwarka Sector 9,Blue,FALSE,FALSE
+Blue-Noida,49,Dwarka Sector 8,Blue,FALSE,FALSE
+Blue-Noida,50,Dwarka Sector 21,Blue,FALSE,FALSE
+Blue-Vaishali,1,Dwarka Sector 21,Blue,FALSE,FALSE
+Blue-Vaishali,2,Dwarka Sector 8,Blue,FALSE,FALSE
+Blue-Vaishali,3,Dwarka Sector 9,Blue,FALSE,FALSE
+Blue-Vaishali,4,Dwarka Sector 10,Blue,FALSE,FALSE
+Blue-Vaishali,5,Dwarka Sector 11,Blue,FALSE,FALSE
+Blue-Vaishali,6,Dwarka Sector 12,Blue,FALSE,FALSE
+Blue-Vaishali,7,Dwarka Sector 13,Blue,FALSE,FALSE
+Blue-Vaishali,8,Dwarka Sector 14,Blue,FALSE,FALSE
+Blue-Vaishali,9,Dwarka-Kakrola,Blue,FALSE,FALSE
+Blue-Vaishali,10,Dwarka Mor,Blue,FALSE,FALSE
+Blue-Vaishali,11,Nawada,Blue,FALSE,FALSE
+Blue-Vaishali,12,Uttam Nagar West,Blue,FALSE,FALSE
+Blue-Vaishali,13,Uttam Nagar East,Blue,FALSE,FALSE
+Blue-Vaishali,14,Janakpuri West,Blue,FALSE,FALSE
+Blue-Vaishali,15,Janakpuri East,Blue,FALSE,FALSE
+Blue-Vaishali,16,Tilak Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,17,Subhash Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,18,Tagore Garden,Blue,FALSE,FALSE
+Blue-Vaishali,19,Rajouri Garden,Blue,FALSE,FALSE
+Blue-Vaishali,20,Ramesh Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,21,Moti Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,22,Kirti Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,23,Shadipur,Blue,FALSE,FALSE
+Blue-Vaishali,24,Patel Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,25,Rajendra Place,Blue,FALSE,FALSE
+Blue-Vaishali,26,Karol Bagh,Blue,FALSE,FALSE
+Blue-Vaishali,27,Jhandewalan,Blue,FALSE,FALSE
+Blue-Vaishali,28,Ramakrishna Ashram Marg,Blue,FALSE,FALSE
+Blue-Vaishali,29,Rajiv Chowk,Blue,FALSE,FALSE
+Blue-Vaishali,30,Barakhamba Road,Blue,FALSE,FALSE
+Blue-Vaishali,31,Mandi House,Blue,FALSE,FALSE
+Blue-Vaishali,32,Supreme Court,Blue,FALSE,FALSE
+Blue-Vaishali,33,Indraprastha,Blue,FALSE,FALSE
+Blue-Vaishali,34,Yamuna Bank,Blue,FALSE,FALSE
+Blue-Vaishali,35,Laxmi Nagar,Blue,FALSE,FALSE
+Blue-Vaishali,36,Nirman Vihar,Blue,FALSE,FALSE
+Blue-Vaishali,37,Preet Vihar,Blue,FALSE,FALSE
+Blue-Vaishali,38,Karkarduma,Blue,FALSE,FALSE
+Blue-Vaishali,39,Anand Vihar,Blue,FALSE,FALSE
+Blue-Vaishali,40,Kaushambi,Blue,FALSE,FALSE
+Blue-Vaishali,41,Vaishali,Blue,FALSE,FALSE
+Green-Inderlok,1,Inderlok,Green,FALSE,FALSE
+Green-Inderlok,2,Ashok Park Main,Green,FALSE,FALSE
+Green-Inderlok,3,Punjabi Bagh,Green,FALSE,FALSE
+Green-Inderlok,4,Punjabi Bagh West,Green,FALSE,FALSE
+Green-Inderlok,5,Shivaji Park,Green,FALSE,FALSE
+Green-Inderlok,6,Madipur,Green,FALSE,FALSE
+Green-Inderlok,7,Paschim Vihar East,Green,FALSE,FALSE
+Green-Inderlok,8,Paschim Vihar West,Green,FALSE,FALSE
+Green-Inderlok,9,Peeragarhi,Green,FALSE,FALSE
+Green-Inderlok,10,Udyog Nagar,Green,FALSE,FALSE
+Green-Inderlok,11,Maharaja Surajmal Stadium,Green,FALSE,FALSE
+Green-Inderlok,12,Nangloi,Green,FALSE,FALSE
+Green-Inderlok,13,Nangloi Railway Station,Green,FALSE,FALSE
+Green-Inderlok,14,Rajdhani Park,Green,FALSE,FALSE
+Green-Inderlok,15,Mundka,Green,FALSE,FALSE
+Green-KirtiNagar,1,Kirti Nagar,Green,FALSE,FALSE
+Green-KirtiNagar,2,Satguru Ram Singh Marg,Green,FALSE,FALSE
+Green-KirtiNagar,3,Ashok Park Main,Green,FALSE,FALSE
+Green-KirtiNagar,4,Punjabi Bagh,Green,FALSE,FALSE
+Green-KirtiNagar,5,Punjabi Bagh West,Green,FALSE,FALSE
+Green-KirtiNagar,6,Shivaji Park,Green,FALSE,FALSE
+Green-KirtiNagar,7,Madipur,Green,FALSE,FALSE
+Green-KirtiNagar,8,Paschim Vihar East,Green,FALSE,FALSE
+Green-KirtiNagar,9,Paschim Vihar West,Green,FALSE,FALSE
+Green-KirtiNagar,10,Peeragarhi,Green,FALSE,FALSE
+Green-KirtiNagar,11,Udyog Nagar,Green,FALSE,FALSE
+Green-KirtiNagar,12,Maharaja Surajmal Stadium,Green,FALSE,FALSE
+Green-KirtiNagar,13,Nangloi,Green,FALSE,FALSE
+Green-KirtiNagar,14,Nangloi Railway Station,Green,FALSE,FALSE
+Green-KirtiNagar,15,Rajdhani Park,Green,FALSE,FALSE
+Green-KirtiNagar,16,Mundka,Green,FALSE,FALSE
+Green-KirtiNagar,17,Mundka Industrial Area (MIA),Green,FALSE,FALSE
+Green-KirtiNagar,18,Ghevra,Green,FALSE,FALSE
+Green-KirtiNagar,19,Tikri Kalan,Green,FALSE,FALSE
+Green-KirtiNagar,20,Tikri Border,Green,FALSE,FALSE
+Green-KirtiNagar,21,Pandit Shree Ram Sharma (Modern Industrial Estate),Green,FALSE,FALSE
+Green-KirtiNagar,22,Bahadurgarh City (Bus Stand),Green,FALSE,FALSE
+Green-KirtiNagar,23,Brigadier Hoshiyar Singh (Bahadurgarh City Park),Green,FALSE,FALSE
+Violet,1,Kashmere Gate,Violet,FALSE,FALSE
+Violet,2,Lal Qila,Violet,FALSE,FALSE
+Violet,3,Jama Masjid,Violet,FALSE,FALSE
+Violet,4,Delhi Gate,Violet,FALSE,FALSE
+Violet,5,ITO,Violet,FALSE,FALSE
+Violet,6,Mandi House,Violet,FALSE,FALSE
+Violet,7,Janpath,Violet,FALSE,FALSE
+Violet,8,Central Secretariat,Violet,FALSE,FALSE
+Violet,9,Khan Market,Violet,FALSE,FALSE
+Violet,10,Jawaharlal Nehru Stadium,Violet,FALSE,FALSE
+Violet,11,Jangpura,Violet,FALSE,FALSE
+Violet,12,Lajpat Nagar,Violet,FALSE,FALSE
+Violet,13,Moolchand,Violet,FALSE,FALSE
+Violet,14,Kailash Colony,Violet,FALSE,FALSE
+Violet,15,Nehru Place,Violet,FALSE,FALSE
+Violet,16,Kalkaji Mandir,Violet,FALSE,FALSE
+Violet,17,Govindpuri,Violet,FALSE,FALSE
+Violet,18,Harkesh Nagar Okhla,Violet,FALSE,FALSE
+Violet,19,Jasola Apollo,Violet,FALSE,FALSE
+Violet,20,Sarita Vihar,Violet,FALSE,FALSE
+Violet,21,Mohan Estate,Violet,FALSE,FALSE
+Violet,22,Tughlakabad Station,Violet,FALSE,FALSE
+Violet,23,Badarpur Border,Violet,FALSE,FALSE
+Violet,24,Sarai,Violet,FALSE,FALSE
+Violet,25,NHPC Chowk,Violet,FALSE,FALSE
+Violet,26,Mewla Maharajpur,Violet,FALSE,FALSE
+Violet,27,Sector 28,Violet,FALSE,FALSE
+Violet,28,Badkal Mor,Violet,FALSE,FALSE
+Violet,29,Old Faridabad,Violet,FALSE,FALSE
+Violet,30,Neelam Chowk Ajronda,Violet,FALSE,FALSE
+Violet,31,Bata Chowk,Violet,FALSE,FALSE
+Violet,32,Escorts Mujesar,Violet,FALSE,FALSE
+Violet,33,Sant Surdas - Sihi,Violet,FALSE,FALSE
+Violet,34,Raja Nahar Singh,Violet,FALSE,FALSE
+Pink-Circular,1,Maujpur - Babarpur,Pink,FALSE,TRUE
+Pink-Circular,2,Yamuna Vihar,Pink,FALSE,TRUE
+Pink-Circular,3,Bhajanpura,Pink,FALSE,TRUE
+Pink-Circular,4,Khajuri Khas,Pink,FALSE,TRUE
+Pink-Circular,5,Nanaksar - Sonia Vihar,Pink,FALSE,TRUE
+Pink-Circular,6,Jagatpur - Wazirabad,Pink,FALSE,TRUE
+Pink-Circular,7,Jharoda Majra,Pink,FALSE,TRUE
+Pink-Circular,8,Burari,Pink,FALSE,TRUE
+Pink-Circular,9,Majlis Park,Pink,FALSE,TRUE
+Pink-Circular,10,Azadpur,Pink,FALSE,TRUE
+Pink-Circular,11,Shalimar Bagh,Pink,FALSE,TRUE
+Pink-Circular,12,Netaji Subhash Place,Pink,FALSE,TRUE
+Pink-Circular,13,Shakurpur,Pink,FALSE,TRUE
+Pink-Circular,14,Punjabi Bagh West,Pink,FALSE,TRUE
+Pink-Circular,15,ESI - Basaidarapur,Pink,FALSE,TRUE
+Pink-Circular,16,Rajouri Garden,Pink,FALSE,TRUE
+Pink-Circular,17,Mayapuri,Pink,FALSE,TRUE
+Pink-Circular,18,Naraina Vihar,Pink,FALSE,TRUE
+Pink-Circular,19,Delhi Cantt.,Pink,FALSE,TRUE
+Pink-Circular,20,Durgabai Deshmukh South Campus,Pink,FALSE,TRUE
+Pink-Circular,21,Sir M. Vishweshwaraiah Moti Bagh,Pink,FALSE,TRUE
+Pink-Circular,22,Bhikaji Cama Place,Pink,FALSE,TRUE
+Pink-Circular,23,Sarojini Nagar,Pink,FALSE,TRUE
+Pink-Circular,24,Dilli Haat - INA,Pink,FALSE,TRUE
+Pink-Circular,25,South Extension,Pink,FALSE,TRUE
+Pink-Circular,26,Lajpat Nagar,Pink,FALSE,TRUE
+Pink-Circular,27,Vinobapuri,Pink,FALSE,TRUE
+Pink-Circular,28,Ashram,Pink,FALSE,TRUE
+Pink-Circular,29,Sarai Kale Khan - Nizamuddin,Pink,FALSE,TRUE
+Pink-Circular,30,Mayur Vihar-I,Pink,FALSE,TRUE
+Pink-Circular,31,Shree Ram Mandir Mayur Vihar,Pink,FALSE,TRUE
+Pink-Circular,32,Trilokpuri - Sanjay Lake,Pink,FALSE,TRUE
+Pink-Circular,33,East Vinod Nagar - Mayur Vihar II,Pink,FALSE,TRUE
+Pink-Circular,34,Mandawali - West Vinod Nagar,Pink,FALSE,TRUE
+Pink-Circular,35,IP Extension,Pink,FALSE,TRUE
+Pink-Circular,36,Anand Vihar,Pink,FALSE,TRUE
+Pink-Circular,37,Karkarduma,Pink,FALSE,TRUE
+Pink-Circular,38,Karkarduma Court,Pink,FALSE,TRUE
+Pink-Circular,39,Krishna Nagar,Pink,FALSE,TRUE
+Pink-Circular,40,East Azad Nagar,Pink,FALSE,TRUE
+Pink-Circular,41,Welcome,Pink,FALSE,TRUE
+Pink-Circular,42,Jaffrabad,Pink,FALSE,TRUE
+Pink-ShivVihar,1,Maujpur - Babarpur,Pink,FALSE,FALSE
+Pink-ShivVihar,2,Gokulpuri,Pink,FALSE,FALSE
+Pink-ShivVihar,3,Johri Enclave,Pink,FALSE,FALSE
+Pink-ShivVihar,4,Shiv Vihar,Pink,FALSE,FALSE
+Magenta-South,1,Botanical Garden,Magenta,FALSE,FALSE
+Magenta-South,2,Okhla Bird Sanctuary,Magenta,FALSE,FALSE
+Magenta-South,3,Kalindi Kunj,Magenta,FALSE,FALSE
+Magenta-South,4,Jasola Vihar Shaheen Bagh,Magenta,FALSE,FALSE
+Magenta-South,5,Okhla Vihar,Magenta,FALSE,FALSE
+Magenta-South,6,Jamia Millia Islamia,Magenta,FALSE,FALSE
+Magenta-South,7,Sukhdev Vihar,Magenta,FALSE,FALSE
+Magenta-South,8,Okhla NSIC,Magenta,FALSE,FALSE
+Magenta-South,9,Kalkaji Mandir,Magenta,FALSE,FALSE
+Magenta-South,10,Nehru Enclave,Magenta,FALSE,FALSE
+Magenta-South,11,Greater Kailash,Magenta,FALSE,FALSE
+Magenta-South,12,Chirag Delhi,Magenta,FALSE,FALSE
+Magenta-South,13,Panchsheel Park,Magenta,FALSE,FALSE
+Magenta-South,14,Hauz Khas,Magenta,FALSE,FALSE
+Magenta-South,15,IIT,Magenta,FALSE,FALSE
+Magenta-South,16,R. K. Puram,Magenta,FALSE,FALSE
+Magenta-South,17,Munirka,Magenta,FALSE,FALSE
+Magenta-South,18,Vasant Vihar,Magenta,FALSE,FALSE
+Magenta-South,19,Shankar Vihar,Magenta,FALSE,FALSE
+Magenta-South,20,Terminal 1-IGI Airport,Magenta,FALSE,FALSE
+Magenta-South,21,Sadar Bazar Cantonment,Magenta,FALSE,FALSE
+Magenta-South,22,Palam,Magenta,FALSE,FALSE
+Magenta-South,23,Dashrathpuri,Magenta,FALSE,FALSE
+Magenta-South,24,Dabri Mor - Janakpuri South,Magenta,FALSE,FALSE
+Magenta-South,25,Janakpuri West,Magenta,FALSE,FALSE
+Magenta-KPE,1,Janakpuri West,Magenta,FALSE,FALSE
+Magenta-KPE,2,Krishna Park Extension,Magenta,FALSE,FALSE
+Magenta-North,1,Majlis Park,Magenta-North,FALSE,FALSE
+Magenta-North,2,Bhalaswa,Magenta-North,FALSE,FALSE
+Magenta-North,3,Haiderpur Badli Mor,Magenta-North,FALSE,FALSE
+Magenta-North,4,Haiderpur Village,Magenta-North,FALSE,FALSE
+Magenta-North,5,Uttari Pitampura-Prashant Vihar,Magenta-North,FALSE,FALSE
+Magenta-North,6,Madhuban Chowk (Magenta),Magenta-North,FALSE,FALSE
+Magenta-North,7,Deepali Chowk,Magenta-North,FALSE,FALSE
+Grey,1,Dwarka-Kakrola,Grey,FALSE,FALSE
+Grey,2,Nangli,Grey,FALSE,FALSE
+Grey,3,Najafgarh,Grey,FALSE,FALSE
+Grey,4,Dhansa Bus Stand,Grey,FALSE,FALSE
+Airport-Express,1,New Delhi,Airport-Express,FALSE,FALSE
+Airport-Express,2,Shivaji Stadium,Airport-Express,FALSE,FALSE
+Airport-Express,3,Durgabai Deshmukh South Campus,Airport-Express,FALSE,FALSE
+Airport-Express,4,Delhi Aerocity,Airport-Express,FALSE,FALSE
+Airport-Express,5,IGI Airport,Airport-Express,FALSE,FALSE
+Airport-Express,6,Dwarka Sector 21,Airport-Express,FALSE,FALSE
+Airport-Express,7,Yashobhoomi Dwarka Sector-25,Airport-Express,FALSE,FALSE
