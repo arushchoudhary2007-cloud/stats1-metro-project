@@ -2,7 +2,7 @@
 ##  metro_network.R      (base R only, no packages needed)
 ##
 ##  Minimum number of stops and minimum number of interchanges between
-##  every pair of stations, and a comparison of the real network with
+##  every pair of stations (and the stops on a fewest-interchange route), and a comparison of the real network with
 ##  randomly rearranged networks (the "hypothetical population").
 ## =====================================================================
 
@@ -173,6 +173,61 @@ interchange_matrix <- function(net) {
     }, integer(1))
   }
   I
+}
+
+
+## Minimum number of interchanges (as above) AND, for the same pair of stations, the fewest
+## stops on a route that uses that minimum number of interchanges (matrix Sx). The two minima
+## need not belong to one route; Sx shows what the fewest-interchange route costs in stops.
+## A second search re-uses the interchange levels and follows only steps that lie on some
+## fewest-interchange route: changing service costs 0 stops, riding one stop costs 1.
+route_matrices <- function(net) {
+  n <- net$n; S <- net$S
+  I  <- matrix(NA_integer_, n, n, dimnames = list(net$stations, net$stations))
+  Sx <- I
+  for (s in seq_len(n)) {
+    dist <- rep(NA_integer_, S)                 # fewest interchanges to every (station, service) state
+    frontier <- net$stat_states[[s]]
+    dist[frontier] <- 0L
+    level <- 0L
+    while (length(frontier)) {
+      queue <- frontier
+      while (length(queue)) {
+        k <- queue[1]; queue <- queue[-1]
+        for (j in net$along[[k]]) if (is.na(dist[j])) {
+          dist[j] <- level; queue <- c(queue, j)
+        }
+      }
+      nxt <- integer(0)
+      for (k in which(dist == level)) for (j in net$paid[[k]]) if (is.na(dist[j])) {
+        dist[j] <- level + 1L; nxt <- c(nxt, j)
+      }
+      frontier <- nxt; level <- level + 1L
+    }
+    stp <- rep(NA_integer_, S)                  # fewest stops, using fewest-interchange steps only
+    frontier <- net$stat_states[[s]]
+    stp[frontier] <- 0L
+    lev <- 0L
+    while (length(frontier)) {
+      queue <- frontier                         # a change of service that stays on such a route
+      while (length(queue)) {
+        k <- queue[1]; queue <- queue[-1]
+        for (j in net$paid[[k]]) if (is.na(stp[j]) && dist[j] == dist[k] + 1L) {
+          stp[j] <- lev; queue <- c(queue, j)
+        }
+      }
+      nxt <- integer(0)                         # then one more stop along a service
+      for (k in which(stp == lev)) for (j in net$along[[k]]) if (is.na(stp[j]) && dist[j] == dist[k]) {
+        stp[j] <- lev + 1L; nxt <- c(nxt, j)
+      }
+      frontier <- nxt; lev <- lev + 1L
+    }
+    I[s, ]  <- vapply(net$stat_states, function(ix) min(dist[ix]), integer(1))
+    Sx[s, ] <- vapply(net$stat_states, function(ix) {
+      m <- min(dist[ix]); min(stp[ix[dist[ix] == m]])
+    }, integer(1))
+  }
+  list(I = I, Sx = Sx)
 }
 
 

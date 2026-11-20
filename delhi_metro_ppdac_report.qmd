@@ -1,0 +1,488 @@
+---
+title: "How far apart are the stations of the Delhi Metro?"
+author:
+  - "Arush Choudhary (BSD-DH-2606)"
+  - "Dhruv Bhagat (BSD-DH-2612)"
+  - "Sujal Kumar Swain (BSD-DH-2622)"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    papersize: a4
+    fontsize: 12pt
+    geometry:
+      - margin=2cm
+    number-sections: true
+    colorlinks: true
+    fig-pos: "tbp"
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{float}
+        \usepackage{etoolbox}
+        \usepackage{needspace}
+        \AtBeginEnvironment{tabular}{\small}
+        \AtBeginEnvironment{longtable}{\small}
+        \setlength{\tabcolsep}{4.5pt}
+        \renewcommand{\topfraction}{0.9}
+        \renewcommand{\bottomfraction}{0.8}
+        \renewcommand{\textfraction}{0.08}
+        \renewcommand{\floatpagefraction}{0.75}
+        \setcounter{topnumber}{3}
+        \setcounter{bottomnumber}{2}
+        \setcounter{totalnumber}{5}
+        \usepackage{titlesec}
+        \titleformat{\section}{\normalfont\large\bfseries}{\thesection}{0.6em}{}
+        \titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{0.6em}{}
+        \titleformat{\subsubsection}[runin]{\normalfont\normalsize\bfseries}{\thesubsubsection}{0.5em}{}[.]
+        \titlespacing*{\section}{0pt}{1.8ex plus 0.4ex minus 0.2ex}{0.8ex plus 0.1ex}
+        \titlespacing*{\subsection}{0pt}{1.4ex plus 0.3ex minus 0.2ex}{0.5ex plus 0.1ex}
+        \titlespacing*{\subsubsection}{0pt}{0.9ex plus 0.2ex minus 0.1ex}{0.6em}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+# To reproduce this report keep these files in the same folder as this .qmd and render it with Quarto:
+#   delhi_metro_lines.csv, metro_network.R, notes_tools.R, analysis.R and (optional) random_networks_1000.rds
+#   and random_networks_1000_no_airport_express.rds
+# analysis.R computes every number of the report (base R only). Without the .rds file the 1,000
+# random networks are computed again (about five minutes). It also writes delhi_metro_pairs.csv
+# and delhi_metro_stations.csv.
+options(width = 78)
+knitr::opts_chunk$set(fig.align = "center")
+source("analysis.R")
+
+# Small helpers to format numbers inside the text and the tables
+f     <- function(v, d = 2) formatC(v, format = "f", digits = d, big.mark = ",")
+pc    <- function(v, d = 1) paste0(formatC(100 * v, format = "f", digits = d), "\\%")   # percent sign for text and tables
+pcp   <- function(v, d = 1) paste0(formatC(100 * v, format = "f", digits = d), "%")      # plain, for graphics
+short <- function(s) sub(" \\(.*\\)$", "", s)     # drop "(...)" from long station names, for display only
+kt    <- function(df, align = NULL, spec = NULL, linesep = "") {   # one style for every table (LaTeX, booktabs)
+  k <- knitr::kable(df, format = "latex", booktabs = TRUE, row.names = FALSE, linesep = linesep, escape = FALSE,
+                    align = if (is.null(spec)) align else "l", position = "H")
+  if (!is.null(spec)) {                           # wrapped columns, e.g. spec = "lp{6cm}p{6cm}"
+    mt <- regexpr("\\\\begin\\{tabular\\}(\\[[a-z]\\])?\\{[^}]*\\}", k[1])
+    regmatches(k[1], mt) <- paste0("\\begin{tabular}{", spec, "}")
+  }
+  k
+}
+blue <- "#1f4e8c"; orange <- "#d9822b"
+```
+
+# Problem {#sec-problem}
+
+The Delhi Metro is a network of coloured lines that cross at interchange stations. For any two stations there is a best way to travel, which we measure in two ways: the minimum number of **stops** (hops from one station to the next) and the minimum number of **interchanges** (changes of train). This is a "minimum number of moves" question, like asking how many turns solve a scrambled cube, but about a network that millions of people use; it matters when lines and interchanges are planned, because it shows how compact the network is and where its layout, rather than chance, makes trips long.
+
+> **Research Question (RQ).** How are the minimum number of stops and interchanges distributed across all `r f(N, 0)` pairs of Delhi Metro stations, which stations are most central, and is the real network more compact than networks with the same lines but randomly placed interchanges?
+
+We break the RQ into four questions that the data can answer. **Q1, distribution:** how are the minimum stops distributed over all pairs, and how well does a random sample of pairs describe them? **Q2, stops and interchanges:** how are they related, and is a trip with no change of train shorter? **Q3, centrality:** which stations are most central, and what explains it? **Q4, real or random:** is the real network more compact than networks with the same lines but randomly placed interchanges?
+
+# Plan {#sec-plan}
+
+**Approach.** The unit is a pair of distinct stations. We compute both minima for every pair, so the main analysis is a census and descriptive; random samples of pairs and stations show how well a sample would have described the census, and random networks show whether the real network is special (inferential ideas). A breadth-first search from every station gives the minimum stops, and a similar search in which riding costs nothing and changing train costs one gives the minimum interchanges. All computation is base R with fixed seeds, so every number can be reproduced.
+
+> **Data Source (DS).** Secondary data: station lists for `r ns` operational DMRC stations (9 lines, `r length(net$lines)` train services, October 2026), compiled from Wikipedia line articles (read 17 and 18 October 2026) that cite DMRC, and verified against DMRC's official network map (August 2026) and interactive network map (retrieved 30 October 2026), which supplied the 2026 openings and the Airport Express routing. Derived data: shortest-path distances (stops and interchanges) for all `r f(N, 0)` station pairs, computed from the station lists by breadth-first search. Simulated data: the random samples of pairs and stations and the 1,000 random networks.
+
+**Statistical tools.** We use two tools from each of the six topics of the Statistics I syllabus (T1 to T12 in @tbl-tools), tagged in every analysis section. The standard displays of Topic 3 are the bar plot, pie chart, histogram, box plot and scatter plot.
+
+```{=latex}
+\Needspace{7\baselineskip}
+```
+
+```{r tbl-tools}
+#| label: tbl-tools
+#| tbl-cap: "The twelve tools of the plan and the question each one answers."
+tools <- data.frame(
+  Topic = c("1 Population, sample", "2 Observational, randomized", "3 Data types, presentation",
+            "4 Descriptive measures", "5 Bivariate data", "6 Categorical data"),
+  `Tools (question answered)` = c("T1 census vs sample; T2 random vs convenience sample (Q1)",
+            "T3 observational study (Q2, Q4); T4 Monte Carlo randomization reference (Q3, Q4)",
+            "T5 empirical c.d.f.; T6 Q-Q plot (Q1, Q3, Q4)",
+            "T7 robust vs classical measures; T8 skewness, kurtosis, outliers (Q1)",
+            "T9 correlation; T10 regression, ANOVA, diagnostics (Q2, Q3)",
+            "T11 cross tabulation; T12 odds ratio, expected counts, $\\chi^2$ (Q2, Q3)"),
+  check.names = FALSE)
+kt(tools, spec = "lp{12.2cm}")
+```
+
+# Data {#sec-data}
+
+## Populations, sample and design
+
+The **target population** is all pairs of stations of the Delhi Metro as a passenger experiences it. Our **study population** is all unordered pairs of the `r ns` stations on the operational DMRC lines in October 2026: `r ns` choose 2 = `r f(N, 0)` pairs. It leaves out the Noida Aqua Line (21 stations) and Rapid Metro Gurugram (11 stations), which other agencies own, Soorghat (built but skipped by trains) and lines under construction. The **sampling frame** is the pair table built from our station table (`r nrow(Lraw)` rows).
+
+The main analysis is a census of *N* = `r f(N, 0)` pairs from *n* = `r ns` stations, so its mean $\mu$ and SD $\sigma$ are **parameters** with no sampling error (non-sampling error is checked in @sec-nonsamp); in a sample the same formulas give **statistics**, $\bar x$ and $s$. We add simulated samples (2,000 each: simple random samples of 30, 100 and 300 pairs, a convenience sample of 300 pairs whose two stations are both on the Yellow or Blue line, and simple random samples of 60 and 120 stations) and 1,000 random networks. The main study is **observational** (T3); the comparison with random networks is a **randomization (Monte Carlo) reference** (T4): we assign the positions of the interchanges at random and see where the real network falls (Q4).
+
+## Gathering the data and issues faced
+
+No source publishes a table of station pairs, so we built it from the stations on each line. The difficulties were: (1) *availability*: the DMRC GTFS page gave a browser error (`ERR_INVALID_RESPONSE`), so we typed each line's station order from Wikipedia line articles and checked it against DMRC's August 2026 map (the December 2021 map predates the 2026 extensions); (2) *complexity*: branches (Blue to Vaishali, Green from Kirti Nagar), a loop (Pink), two unconnected Magenta sections and Soorghat, so each route that one train runs end to end is a separate *train service*; (3) *naming*: renamed stations (Dwarka is now Dwarka-Kakrola), one interchange with two names (Dhaula Kuan on the Airport Express, Durgabai Deshmukh South Campus on the Pink Line) and two stations called Madhuban Chowk (Red, Magenta), modelled as two.
+
+## Importing, cleaning, checking and management {#sec-cleaning}
+
+The station lists are one file, `delhi_metro_lines.csv`, one row per station per train service (long, tidy format). R reads it as `r nrow(Lraw)` rows and `r ncol(Lraw)` columns (`line`, `station`, `group` as character, `pos` as integer, `fixed`, `circular` as logical). Cleaning meant trimming stray spaces, correcting the repeated station, giving the Airport Express and Pink interchange one label, keeping the two Madhuban Chowk stations apart, leaving out stations outside the study, and entering branches, the loop and the unconnected Magenta sections as separate services. From the table `metro_network.R` builds the distinct stations, the matrices of minimum stops and interchanges and the pair table (`r f(N, 0)` rows: both minima, the stops on a fewest-interchange route and a same-line flag; `delhi_metro_pairs.csv`), and `analysis.R` adds a station table. Station names are nominal, `pos` discrete, `circular` binary, the minima discrete counts. The station table is the only hand-made input, so a correction is carried through by rendering again; checks are in the supplement.
+
+## First look and operational decisions {#sec-operational}
+
+A first look (@fig-first) checks that the values are sensible: no line is missing, the smallest distance is 1 stop, the largest is `r max(x)`, and no pair needs more than `r max(k)` interchanges.
+
+```{r fig-first}
+#| label: fig-first
+#| fig-cap: "First look: stations per coloured line and share of pairs by minimum interchanges."
+#| fig-width: 6.6
+#| fig-height: 1.75
+par(mfrow = c(1, 2)); par(cex = 1, mai = c(0.4, 1.1, 0.25, 0.06), mgp = c(1.15, 0.4, 0), cex.main = 0.85, cex.axis = 0.62, cex.lab = 0.72)
+barplot(sort(observed), horiz = TRUE, las = 1, col = blue, border = "white", cex.names = 0.62,
+        xlab = "number of stations", main = "Stations per line")
+par(mai = c(0.05, 0.2, 0.3, 0.2))
+tk <- table(k)
+pie(tk, labels = paste0(names(tk), ": ", pcp(prop.table(tk), 0)), init.angle = 90, clockwise = TRUE,
+    col = c("#9ecae1", "#4292c6", "#08519c", orange), main = "Interchanges per pair", cex = 0.65)
+```
+
+**Madhuban Chowk:** DMRC's route planner routes passengers through it, but the physical interchange is not yet operational and passengers must leave the system, so we model the Red and Magenta stations as two (through trains do run to Krishna Park Extension). **Airport Express:** it needs a separate ticket, but for this topological study transfers to it are modelled like any interchange. These decisions fix the study population at `r ns` stations, `r f(N, 0)` pairs and `r nrow(ic)` interchanges; @sec-nonsamp measures how much they matter.
+
+# Analysis {#sec-analysis}
+
+All questions use the pair table and the station table. The `r f(N, 0)` pairs share stations, so they are not independent: we report coefficients, odds ratios and $\chi^2$ values as descriptions and quote no p-values or intervals for pairs. Where we need a reference (Q4, the station randomization) it comes from independent random draws that we generate.
+
+## Q1: distribution of the stops, and how well a sample describes it
+
+Q1 uses T5 and T6 (shape), T7 and T8 (measures, skewness, kurtosis, outliers) and T1 and T2 (census against samples).
+
+```{r q1-vals}
+#| include: false
+m <- list(g1 = skew_moment(x), pe = skew_pearson(x), pe2 = skew_pearson2(x), bo = skew_bowley(qs),
+          b2 = kurtosis_moment(x), mad_mean = mean_abs_dev(x), mad_med = median_abs_dev(x), cv = cv_pct(x),
+          s = sd(x), qd = iqr / 2, tr = mean(x, trim = 0.1),
+          drop_sd = 100 * (sd_pop(x_in) / sigma - 1), drop_mad = 100 * (mean_abs_dev(x_in) / mean_abs_dev(x) - 1),
+          p90 = quantile(x, 0.9, names = FALSE), gt40 = mean(x > 40))
+cnt1216 <- table(x)[as.character(12:16)]
+m$plateau <- 100 * (max(cnt1216) - min(cnt1216)) / max(cnt1216)
+```
+
+### Shape: c.d.f., histogram, Q-Q plot, box plot (T5, T6)
+
+Half of all pairs are `r f(qs[2], 0)` stops apart or fewer, a quarter are within `r f(qs[1], 0)`, nine in ten within `r f(m$p90, 0)`, and only `r pc(m$gt40)` need more than 40. The histogram has one broad peak at 12 to 16 stops and a longer right tail; the five-number summary is `r min(x)`, `r f(qs[1], 0)`, `r f(qs[2], 0)`, `r f(qs[3], 0)`, `r max(x)` (@fig-shape). In the Q-Q plot the points leave the line at both ends: the lower end stops at 1 stop (a Normal curve would run below zero) and the upper tail is longer. The longest shortest trip, `r max(x)` stops, is the metro counterpart of the 20 moves that solve any scrambled Rubik's cube.
+
+```{r fig-shape}
+#| label: fig-shape
+#| fig-cap: "The minimum number of stops: c.d.f., histogram with mode, median and mean, Normal Q-Q plot, and box plot with the upper outlier fence (dashed)."
+#| fig-width: 6.6
+#| fig-height: 2.4
+layout(matrix(c(1, 2, 3, 4, 4, 4), 2, 3, byrow = TRUE), heights = c(2, 1))
+par(cex = 1, mai = c(0.42, 0.5, 0.25, 0.06), mgp = c(1.15, 0.4, 0), cex.main = 0.85, cex.axis = 0.62, cex.lab = 0.72)
+plot(Fx, verticals = TRUE, do.points = FALSE, col = blue, lwd = 2,
+     main = "Empirical c.d.f.", xlab = "minimum number of stops", ylab = "proportion of pairs")
+abline(h = c(0.25, 0.5, 0.75), lty = 3, col = "grey60")
+hist(x, breaks = seq(0.5, max(x) + 0.5, 1), col = "grey85", border = "white", main = "Histogram",
+     xlab = "minimum number of stops", ylab = "pairs")
+abline(v = c(mo, median(x), mu), col = c(orange, "darkgreen", "firebrick"), lwd = 2, lty = c(1, 1, 2))
+legend("topright", c("mode", "median", "mean"), col = c(orange, "darkgreen", "firebrick"),
+       lwd = 2, lty = c(1, 1, 2), bty = "n", cex = 0.6)
+qqnorm(x, pch = 16, cex = 0.3, col = blue, main = "Normal Q-Q plot",
+       xlab = "Normal quantiles", ylab = "minimum stops")
+qqline(x, col = "firebrick", lwd = 2)
+par(mai = c(0.36, 0.1, 0.2, 0.1), mgp = c(1.05, 0.35, 0))
+boxplot(x, horizontal = TRUE, col = "grey85", outpch = 16, outcex = 0.5, outcol = blue,
+        xlab = "minimum number of stops", main = "Box plot with the upper outlier fence (dashed)")
+abline(v = fence_hi, lty = 2, col = "firebrick")
+```
+
+### Centre and spread: classical and robust (T7)
+
+@tbl-measures puts classical and robust measures side by side, and they tell the same story. The mean (`r f(mu)`) is above the median (`r f(qs[2], 0)`), which is above the mode (`r mo`): the order of a right skew. The mode is fragile, because the counts at 12 to 16 stops differ by only `r f(m$plateau, 1)`%, so we read the skew from the mean and the median instead. The SD (`r f(sigma)`, divisor $N$ for a census) is close to its robust counterparts, IQR/1.349 = `r f(iqr / 1.349)` and 1.4826 $\times$ median absolute deviation = `r f(m$mad_med)`. Squaring makes the SD the more sensitive measure: dropping the `r sum(flag)` outlying pairs flagged below lowers it by `r f(abs(m$drop_sd), 1)`% but the mean absolute deviation by only `r f(abs(m$drop_mad), 1)`%. The same measures computed from classes of five stops are close to the exact ones (supplement).
+
+```{=latex}
+\Needspace{6\baselineskip}
+```
+
+```{r tbl-measures}
+#| label: tbl-measures
+#| tbl-cap: "Classical and robust measures of centre, spread and shape of the minimum stops (census, divisor $N$)."
+meas <- data.frame(
+  Describes = c("centre", "spread", "shape"),
+  Classical = c(
+    sprintf("mean %s", f(mu)),
+    sprintf("$\\sigma$ %s; mean abs. dev. %s; range %d to %d; CV %s\\%%", f(sigma), f(m$mad_mean), min(x), max(x), f(m$cv, 1)),
+    sprintf("$\\gamma_1=\\mu_3/\\sigma^3$ %s; kurtosis $\\beta_2=\\mu_4/\\sigma^4$ %s (excess %s)", f(m$g1), f(m$b2), f(m$b2 - 3))),
+  `Robust or mixed` = c(
+    sprintf("median %s; 10\\%% trimmed mean %s; mode %d", f(qs[2], 0), f(m$tr), mo),
+    sprintf("IQR %s ($/1.349$ = %s); quartile deviation %s; median abs. dev. $\\times 1.4826$ = %s", f(iqr, 0), f(iqr / 1.349), f(m$qd, 1), f(m$mad_med)),
+    sprintf("Bowley %s; Pearson $(\\bar x-\\text{mode})/\\sigma$ %s and $3(\\bar x-\\text{median})/\\sigma$ %s", f(m$bo), f(m$pe), f(m$pe2))),
+  check.names = FALSE)
+kt(meas, spec = "lp{6.7cm}p{6.8cm}")
+```
+
+### Skewness, kurtosis and outliers (T8)
+
+All three skewness coefficients are positive: $\gamma_1=$ `r f(m$g1)` is moderate and Bowley's quartile coefficient (`r f(m$bo)`) small, so the skew sits in the tail, not the bulk. The kurtosis $\beta_2=$ `r f(m$b2)` is that of a Normal curve (3): the tails are not heavy overall, since the lower end is cut off at 1 stop. The empirical rule fits the bulk: `r pc(cover[1])` of the pairs lie within $1\sigma$ of the mean (Normal: 68.3%) and `r pc(cover[2])` within $2\sigma$ (95.4%), above Chebyshev's minimum of `r pc(cheb[2], 0)`. The farthest pair has $z=$ `r f(max(z))` and `r n_z3` pairs have $|z|>3$. Tukey's rule (1.5 IQR beyond a quartile) has a lower fence (`r f(fence_lo, 1)`) below the smallest possible value, so only the upper fence (`r f(fence_hi, 1)` stops) flags pairs: `r sum(flag)` (`r pc(mean(flag))`). They are real trips between the far ends of the Violet and Green lines, not errors, so they stay in the data: the farthest pair is `r short(P$from_station[o_far[1]])` to `r short(P$to_station[o_far[1]])` (`r x[o_far[1]]` stops, `r k[o_far[1]]` interchanges), and `r short(names(cnt_flag)[1])` is in `r pc(cnt_flag[[1]] / sum(flag), 0)` of the pairs flagged.
+
+### Census against samples (T1, T2) {#sec-samples}
+
+The census gives $\mu=$ `r f(mu)` and $\sigma=$ `r f(sigma)`. To see how well a sample would have done, we drew 2,000 simple random samples without replacement (SRSWOR) of 30, 100 and 300 pairs (T1) and, for contrast, 2,000 convenience samples of 300 pairs from the `r f(sum(in_yb), 0)` pairs whose stations are both on the Yellow or Blue line (T2). For a large sampling fraction $f=n/N$ we also sampled 60 and 120 of the 243 stations, without and with replacement (SRSWR), and averaged their station values (whose mean is again `r f(mean(cs))`).
+
+```{=latex}
+\Needspace{9\baselineskip}
+```
+
+```{r tbl-samples}
+#| label: tbl-samples
+#| tbl-cap: "2,000 samples of each kind against the census (true mean 16.62), $f=n/N$. SD of $\\bar x$ observed and by the formula (with the finite-population correction; SRSWR: $\\sigma/\\sqrt n$; convenience: the frame's variance). Gap: median Kolmogorov-Smirnov distance to the census c.d.f."
+st <- data.frame(Sample = c("Pairs, SRSWOR", "Pairs, SRSWOR", "Pairs, SRSWOR", "Convenience",
+                            "Stations, SRSWOR", "Stations, SRSWOR", "Stations, SRSWR", "Stations, SRSWR"),
+                 n = samp$n, `$f$` = pc(samp$f, 1), `Mean of $\\bar x$` = f(samp$mean_of_means),
+                 `SD of $\\bar x$` = f(samp$sd_obs, 3), `Formula` = f(samp$sd_formula, 3),
+                 `Within 1 stop of $\\mu$` = pc(samp$within1, 2),
+                 Gap = ifelse(is.na(samp$gap), "", f(samp$gap, 3)), check.names = FALSE)
+kt(st, align = "lrrrrrrr")
+```
+
+**Random samples work as theory predicts** (@tbl-samples): their means centre on $\mu$ at every size, and their SD matches $\sigma/\sqrt n$ with the finite-population correction, which barely matters for pairs ($f\le$ `r pc(max(samp$f[1:3]), 0)`). It matters for stations: with `r samp$n[6]` of 243 ($f=$ `r pc(samp$f[6], 0)`), sampling without replacement gives an SD of `r f(samp$sd_obs[6])` against `r f(samp$sd_obs[8])` with replacement, a ratio of `r f(samp$sd_obs[6] / samp$sd_obs[8])` $\approx\sqrt{1-f}=$ `r f(sqrt(1 - samp$f[6]))`. **Convenience samples are biased:** they are as steady as random ones (SD `r f(samp$sd_obs[4])` against `r f(samp$sd_obs[3])`) but centre on `r f(mean(x[in_yb]))`, `r f(mu - mean(x[in_yb]))` stops too low, so only `r pc(samp$within1[4], 2)` land within one stop of $\mu$ and their c.d.f. is further from the census c.d.f. (gap `r f(samp$gap[4], 3)` against `r f(samp$gap[3], 3)`). Drawing more pairs would not help: this is a coverage error, a *non-sampling* error that depends on which pairs can be drawn, not on how many.
+
+## Q2: stops and interchanges, and is a trip with no change shorter?
+
+Q2 uses T9 and T10 (correlation, regression, ANOVA, diagnostics), T3 (study type) and T11 and T12 (cross tabulation, odds ratio, $\chi^2$).
+
+### Correlation and the regression line (T9, T10)
+
+The mean number of stops rises with every interchange, from `r f(g_mean[1], 1)` for direct trips to `r f(g_mean[4], 1)` for trips with three (@fig-q2), but the link is only moderate: $r=$ `r f(o2$r)` (Spearman `r f(r_s)`). The least squares line is stops = `r f(o2$b0)` + `r f(o2$b1)` $\times$ interchanges: each extra change of train goes with about `r f(o2$b1, 0)` more stops. In the analysis of variance (@tbl-ols) interchanges explain $R^2=$ `r pc(o2$R2, 0)` of the variation in stops, leaving a residual SD of `r f(o2$s)` stops. Is a straight line enough? Splitting the variance of stops within and between the four interchange groups, `r pc(eta2, 1)` lies between groups and the line captures `r pc(o2$R2 / eta2, 0)` of that part; the rest is variation among pairs with the same number of changes, which no line could remove.
+
+```{r fig-q2}
+#| label: fig-q2
+#| fig-cap: "Stops against interchanges for all pairs: scatter plot with fitted line and group means (diamonds), box plots, and share of long trips (more than 16 stops); dashed line: all pairs."
+#| fig-width: 6.6
+#| fig-height: 1.55
+par(mfrow = c(1, 3)); par(cex = 1, mai = c(0.42, 0.5, 0.25, 0.06), mgp = c(1.15, 0.4, 0), cex.main = 0.85, cex.axis = 0.62, cex.lab = 0.72)
+plot(jitter(k, amount = 0.3), jitter(x, amount = 0.4), pch = 16, cex = 0.25,
+     col = adjustcolor(blue, alpha.f = 0.12), xaxt = "n",
+     xlab = "minimum interchanges", ylab = "minimum stops", main = "Stops against interchanges")
+axis(1, at = 0:3)
+abline(fit2, col = "firebrick", lwd = 2)
+points(0:3, g_mean, pch = 18, cex = 1.5, col = "#f2a900")
+boxplot(x ~ k, col = "grey85", pch = 16, cex = 0.3,
+        xlab = "minimum interchanges", ylab = "minimum stops", main = "Box plots by interchanges")
+bp <- barplot(100 * p_long_k, names.arg = 0:3, col = blue, border = "white", ylim = c(0, 100), yaxt = "n",
+              xlab = "minimum interchanges", ylab = "% of long trips", main = "Share of long trips")
+abline(h = 100 * mean(long == "long"), lty = 2, col = "grey40"); axis(2, at = c(0, 50, 100))
+text(bp, 0, labels = paste0(round(100 * p_long_k), "%"), pos = 3, offset = 0.4, cex = 0.62, col = "white")
+```
+
+```{=latex}
+\Needspace{9\baselineskip}
+```
+
+```{r tbl-ols}
+#| label: tbl-ols
+#| tbl-cap: "Least squares and analysis of variance of the two regressions; last row: slopes that minimise vertical, perpendicular and horizontal distances (a perpendicular distance needs both axes in the same units, so it is shown for Q3 only)."
+ols <- data.frame(
+  Quantity = c("Observations $n$", "Intercept $\\hat\\beta_0$, slope $\\hat\\beta_1$", "SST $=\\sum(y-\\bar y)^2$",
+               "SSR (df 1)", "SSE (df $n-2$)", "$R^2=$ SSR/SST", "$\\hat\\sigma=\\sqrt{\\text{SSE}/(n-2)}$",
+               "$r$; $b_{yx}b_{xy}=r^2$", "Slope: vertical, perpendicular, horizontal"),
+  `Q2: stops on interchanges` = c(f(o2$n, 0), paste(f(o2$b0), ",", f(o2$b1)), f(o2$SST, 0), f(o2$SSR, 0), f(o2$SSE, 0),
+                                  f(o2$R2, 3), f(o2$s), paste0(f(o2$r), "; ", f(o2$b_yx * o2$b_xy, 3)),
+                                  paste(c(f(slopes2[["vertical"]], 1), "---", f(slopes2[["horizontal"]], 1)), collapse = ", ")),
+  `Q3: centrality on distance` = c(f(o3$n, 0), paste(f(o3$b0), ",", f(o3$b1)), f(o3$SST, 1), f(o3$SSR, 1), f(o3$SSE, 1),
+                                   f(o3$R2, 3), f(o3$s), paste0(f(o3$r), "; ", f(o3$b_yx * o3$b_xy, 3)),
+                                   paste(f(slopes3), collapse = ", ")),
+  check.names = FALSE)
+kt(ols, align = "lrr")
+```
+
+### Assumptions and diagnostics (T10)
+
+Over 2,000 samples of 300 pairs the slope averages `r f(reg_s["mean_b1", "Random 300"])` (census `r f(o2$b1)`) and its SD (`r f(reg_s["sd_b1", "Random 300"])`) matches the standard error $\hat\sigma/\sqrt{S_{xx}}$ (`r f(reg_s["mean_se_b1", "Random 300"])`; more in the supplement). The Q2 residuals (@fig-diag) are right-skewed (`r f(skew_moment(o2$resid))`), with similar spread for 0, 1 and 2 interchanges (SD `r f(res_sd[1], 1)`, `r f(res_sd[2], 1)`, `r f(res_sd[3], 1)`) but smaller for the `r g_n[4]` pairs with three (`r f(res_sd[4], 1)`): mild heteroscedasticity. Normality matters only for inference, which we do not make for pairs, but a square-root transform of the stops removes the skew (residual skewness `r f(skew_moment(o2t$resid))`); the log overshoots (`r f(skew_moment(o2l$resid))`).
+
+```{r fig-diag}
+#| label: fig-diag
+#| fig-cap: "Residual diagnostics for Q2 (left) and Q3 (right): residuals against fitted values and Normal Q-Q plot."
+#| fig-width: 6.6
+#| fig-height: 1.7
+par(mfrow = c(1, 4)); par(cex = 1, mai = c(0.4, 0.5, 0.2, 0.06), mgp = c(1.15, 0.4, 0), cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.68)
+diag_row <- function(o, jit, lab) {
+  plot(o$fitted + jit * runif(length(o$fitted), -1, 1), o$resid, pch = 16, cex = 0.25,
+       col = adjustcolor(blue, alpha.f = if (jit > 0) 0.15 else 0.8), xlab = "fitted value", ylab = "residual",
+       main = paste(lab, "residuals"))
+  abline(h = 0, col = "firebrick")
+  qqnorm(o$resid, pch = 16, cex = 0.25, col = blue, main = paste(lab, "Q-Q plot"), xlab = "Normal quantiles", ylab = "residual")
+  qqline(o$resid, col = "firebrick", lwd = 1.5)
+}
+set.seed(1)
+diag_row(o2, 0.25, "Q2")
+diag_row(o3, 0, "Q3")
+```
+
+### Two minima, one route? (T3)
+
+The two minima are found separately, and for `r f(route[["n_aff"]], 0)` pairs (`r pc(route[["share"]])`) no single route achieves both: the fewest-interchange route costs `r f(route[["mean_extra"]], 1)` more stops on average (median `r f(route[["median_extra"]], 0)`, up to `r f(route[["max_extra"]], 0)`: `r short(P$from_station[ex_i])` to `r short(P$to_station[ex_i])` is `r x[ex_i]` stops with two interchanges, or one interchange and `r xr[ex_i]` stops). With the stops on that route the correlation is `r f(route[["r_route"]])`, so the weak link stands.
+
+### Direct trips against trips with a change (T11, T12)
+
+To ask whether a trip with no change of train is shorter, we split the pairs into direct trips and trips with at least one change (`r f(same_but_change, 0)` same-line pairs need a change: at a branch, or on the Magenta line, whose sections are not joined), and call a trip long when it takes more than the median (`r f(cut1, 0)` stops). The probability of a long trip is `r pc(p_long[1])` for direct trips and `r pc(p_long[2])` with a change (ratio `r f(p_long[[2]] / p_long[[1]], 1)`); the odds are `r f(odds_dir)` and `r f(odds_chg)`, an odds ratio of `r f(OR1)`, larger than the ratio of probabilities because long trips are not rare (`r pc(mean(long == "long"), 0)` of pairs; @tbl-ct). Under independence `r f(cs2$expected[1, 2], 0)` direct-and-long pairs are expected and we see `r f(ct2[1, 2], 0)`; $\chi^2=$ `r f(cs2$chi2, 0)` on $(2-1)(2-1)=1$ df (`r f(cs43$chi2, 0)` on 6 for the full table of interchanges by short, medium and long trips). Pairs are not independent, so $\chi^2$ is a distance from independence, not a test. The direction is stable (odds ratio `r f(OR_s[2])` for more than `r f(cuts[2], 0)` stops, `r f(OR_s[3])` for more than `r f(cuts[3], 0)`), and the share of long trips climbs from `r pc(p_long_k[1], 0)` to `r pc(p_long_k[4], 0)` as interchanges go from 0 to 3 (@fig-q2). A trip on one line is shorter (`r f(mean(x[k == 0]), 1)` stops against `r f(mean(x[k > 0]), 1)`), but in this observational comparison (T3) pairs that need a change join stations on different lines, which tend to be farther apart, so it does not show that changing train adds stops.
+
+```{=latex}
+\Needspace{8\baselineskip}
+```
+
+```{r tbl-ct}
+#| label: tbl-ct
+#| tbl-cap: "Cross tabulations: counts (expected under independence in brackets), probability and odds of the second outcome (long trip; central station), odds ratio and $\\chi^2$ (1 df)."
+ct_tab <- data.frame(
+  Group = c("Pairs, direct", "Pairs, change", "Stations, other", "Stations, interchange"),
+  `Short / other` = c(sprintf("%s (%s)", f(ct2[1, 1], 0), f(cs2$expected[1, 1], 0)), sprintf("%s (%s)", f(ct2[2, 1], 0), f(cs2$expected[2, 1], 0)),
+                      sprintf("%s (%s)", tab3[1, 1], f(cs3$expected[1, 1], 1)), sprintf("%s (%s)", tab3[2, 1], f(cs3$expected[2, 1], 1))),
+  `Long / central` = c(sprintf("%s (%s)", f(ct2[1, 2], 0), f(cs2$expected[1, 2], 0)), sprintf("%s (%s)", f(ct2[2, 2], 0), f(cs2$expected[2, 2], 0)),
+                       sprintf("%s (%s)", tab3[1, 2], f(cs3$expected[1, 2], 1)), sprintf("%s (%s)", tab3[2, 2], f(cs3$expected[2, 2], 1))),
+  Probability = c(pc(p_long[1]), pc(p_long[2]), pc(p_cen[1]), pc(p_cen[2])),
+  Odds = c(f(odds_dir), f(odds_chg), f(tab3[1, 2] / tab3[1, 1]), f(tab3[2, 2] / tab3[2, 1])),
+  `Odds ratio` = c("", f(OR1), "", f(OR3)),
+  `$\\chi^2$` = c("", f(cs2$chi2, 0), "", f(cs3$chi2)),
+  check.names = FALSE)
+kt(ct_tab, align = "lrrrrrr")
+```
+
+## Q3: which stations are most central, and what explains it?
+
+### Measuring centrality
+
+We measure centrality by closeness: a station's mean number of minimum stops to the other `r ns - 1` stations, so smaller means more central (the same idea with interchanges gives a second measure). The average of the station values is `r f(mean(stn$centrality))`, the same as the census mean of Q1, and the values run from `r f(min(stn$centrality))` to `r f(max(stn$centrality))` stops (SD `r f(sd_pop(stn$centrality))`). `r short(stn$station[ord[1]])` is the most central station (`r f(stn$centrality[ord[1]], 1)` stops, $z=$ `r f(z_cent[ord[1]], 1)`) and the three most central stations are all on the Airport Express (with `r short(stn$station[ord[2]])` and `r short(stn$station[ord[3]])`). The least central are the far ends of the Violet and Green lines: `r short(stn$station[far])` (`r f(stn$centrality[far], 1)` stops, $z=$ `r f(z_cent[far], 1)`, `r f(stn$centrality[far] / stn$centrality[ord[1]], 1)` times as far as the most central), `r short(stn$station[rev(ord)[2]])` and `r short(stn$station[rev(ord)[3]])` (both $z>3$). Central in stops is not central in interchanges: `r short(stn$station[which.min(stn$mean_ic)])` needs the fewest (`r f(min(stn$mean_ic))`) and the rank correlation of the two measures is only `r f(r_cm)`.
+
+### What explains centrality? (T9, T10)
+
+An interchange lets a passenger change lines, so a station far from every interchange should be far from most others. With $x$ the stops from a station to its nearest interchange (0 for an interchange), the correlation is `r f(o3$r)` (Spearman `r f(r3_s)`) and mean stops = `r f(o3$b0)` + `r f(o3$b1)` $\times x$ (@tbl-ols, @fig-q3): each extra stop to the nearest interchange adds close to one stop to the average trip, and the line accounts for `r pc(o3$R2, 0)` of the variation. We minimise vertical distances because $x$ is exact; lines that minimise perpendicular or horizontal distances are steeper (`r f(slopes3[2])` and `r f(slopes3[3])`), as they must be when $r<1$, and the gap grows as the correlation weakens (`r f(slopes2[1], 1)` against `r f(slopes2[3], 1)` in Q2). The slope is largely structural: a station on a dead-end arm reaches every other line through its nearest interchange, so random networks show it too (@sec-why). The fit is tightest far out on the arms (@fig-diag, right): the correlation is `r f(r3_low)` among the `r sum(low)` stations within three stops of an interchange but `r f(r3_high)` among the `r sum(high)` stations six or more stops away. `r paste(short(stn$station[order(o3$resid, decreasing = TRUE)[1:3]]), collapse = ", ")` lie furthest above the line because the Grey line's only link, Dwarka-Kakrola, is itself far from the middle (`r f(stn$centrality[stn$station == "Dwarka-Kakrola"], 1)` stops).
+
+```{r fig-q3}
+#| label: fig-q3
+#| fig-cap: "Left: mean stops to the others against stops to the nearest interchange; lines minimise vertical (solid), perpendicular (dashed) and horizontal (dotted) distances. Right: stations of each line, most central at the top."
+#| fig-width: 6.6
+#| fig-height: 1.9
+par(mfrow = c(1, 2)); par(cex = 1, mai = c(0.42, 0.5, 0.25, 0.06), mgp = c(1.15, 0.4, 0), cex.main = 0.85, cex.axis = 0.65, cex.lab = 0.72)
+plot(stn$to_interchange, stn$centrality, pch = 16, cex = 0.7,
+     col = ifelse(stn$interchange, orange, blue),
+     xlab = "stops to the nearest interchange", ylab = "mean stops to the others",
+     main = "What explains centrality?",
+     ylim = c(min(stn$centrality) - 0.8, max(stn$centrality) + 2.4))
+abline(fit3, col = "firebrick", lwd = 2)
+abline(a = o3$ybar - slopes3[2] * o3$xbar, b = slopes3[2], col = "grey30", lty = 2)
+abline(a = o3$ybar - slopes3[3] * o3$xbar, b = slopes3[3], col = "grey30", lty = 3)
+legend("bottomright", legend = c("interchange station", "other station"), pch = 16,
+       col = c(orange, blue), bty = "n", cex = 0.62)
+
+line_st <- unique(data.frame(station = L$station, colour = colour))   # a station counts on each of its lines
+cent_by_line <- split(stn$centrality[match(line_st$station, stn$station)], line_st$colour)
+line_order   <- names(sort(sapply(cent_by_line, median)))              # most central line first
+cent_by_line <- cent_by_line[rev(line_order)]                          # so the most central is drawn on top
+pal <- c(Red = "#d62728", Yellow = "#f2c200", Blue = "#4a90d9", Green = "#3a9d3a", Violet = "#8e5bbd",
+         Pink = "#f58fb3", Magenta = "#c2185b", Grey = "grey65", `Airport-Express` = "#f28c28")
+par(mai = c(0.42, 1.05, 0.25, 0.06))
+boxplot(cent_by_line, horizontal = TRUE, las = 1, col = pal[names(cent_by_line)], pch = 16, cex = 0.5, cex.axis = 0.58,
+        xlab = "mean stops to the others", main = "Stations on each line")
+abline(v = mean(stn$centrality), lty = 2, col = "grey40")
+```
+
+### Are interchange stations the central ones? (T4, T11, T12)
+
+We call a station central if it is in the most central quarter: the `r sum(stn$central)` stations with mean stops at most `r f(q_cent, 1)`. In @tbl-ct the probability of being central is `r pc(p_cen[1])` for other stations and `r pc(p_cen[2])` for interchange stations; the odds ratio is `r f(OR3)`, and `r f(cs3$expected[2, 2], 1)` central interchanges are expected under independence against `r tab3[2, 2]` seen ($\chi^2=$ `r f(cs3$chi2)`, 1 df). The stations are not independent units, so we make a randomization reference: shuffling which `r sum(stn$interchange)` stations are interchanges `r f(B_perm, 0)` times gives a $\chi^2$ at least as large in `r pc(p_perm)` of the shuffles, weak evidence of a link. Interchanges help but do not decide it: `r tab3[2, 1]` of the `r sum(tab3[2, ])` interchange stations are not central, and `r tab3[1, 2]` of the `r sum(tab3[, 2])` central stations are not interchanges. Where a station sits matters as much as what it is.
+
+## Q4: is the real network more compact than a random one?
+
+### Observational study and randomization reference (T3, T4)
+
+A network is compact when trips need few stops and few interchanges. The real network is observed, not assigned (T3): a trip takes `r f(mu)` stops on average (median `r f(qs[2], 0)`, longest `r max(x)`) and `r f(mean(k))` interchanges, and `r pc(mean(k >= 2))` of the pairs need two or more. An observational study cannot rearrange the one real network, so we need a reference. The randomization reference (T4) assigns no treatment to real units but shows what the same measures would be if the positions of the interchanges were set by chance: on each line we redraw at random which of its stations are the interchanges, holding fixed the lines, the number of interchanges on each line and the lines that meet at each interchange. We do this `r f(nrep, 0)` times (random seed `r format(seed, scientific = FALSE)`); `r if (inv_all) paste("in all", f(nrep, 0), "random networks the fixed quantities were exactly those of the real network") else "some fixed quantities differed (see the supplement)"`.
+
+### Results: stops and interchanges (T3, T4, T5, T7)
+
+@tbl-results and @fig-q4 compare the real network with the random ones. The networks are independent draws, so the Monte Carlo tail probability $(1+\#\{\text{random}\ge\text{real}\})/(1000+1)$ is legitimate even though the pairs inside one network are not; a share estimated from 1,000 networks has standard error $\sqrt{p(1-p)/1000}$, at most `r f(100 * max(mc_se), 1)` points.
+
+```{r tbl-results-prep}
+#| include: false
+rows <- c("mean_stops", "max_stops", "mean_changes", "mean_to_interchange", "max_to_interchange", "or_central")
+lab  <- c("Mean stops", "Longest trip (stops)", "Mean interchanges", "Mean stops to nearest interchange",
+          "Largest distance to an interchange", "Odds ratio: interchange, central")
+dig  <- c(2, 0, 3, 2, 0, 2)
+```
+
+```{=latex}
+\Needspace{9\baselineskip}
+```
+
+```{r tbl-results}
+#| label: tbl-results
+#| tbl-cap: "Real network against 1,000 random networks: share of random networks at or below the real value, and Monte Carlo tail probability of being at or above it."
+res_tab <- data.frame(
+  Measure = lab,
+  Real = mapply(function(r, d) f(real[[r]], d), rows, dig),
+  `Random mean` = mapply(function(r, d) f(mean(sims[, r]), d + (d == 0)), rows, dig),
+  `Random range` = mapply(function(r, d) paste(f(min(sims[, r]), d), "to", f(max(sims[, r]), d)), rows, dig),
+  `At or below` = pc(prop[rows], 1),
+  `At or above` = f(mc_tail[rows], 3),
+  check.names = FALSE)
+kt(res_tab, align = "lrrrrr")
+```
+
+**Stops.** The real network needs more stops than every one of the `r f(nrep, 0)` random networks: its mean of `r f(real[["mean_stops"]])` compares with `r f(mean(sims[, "mean_stops"]))` for the average random network (SD `r f(sd(sims[, "mean_stops"]))`, largest `r f(max(sims[, "mean_stops"]))`), `r f((real[["mean_stops"]] - mean(sims[, "mean_stops"])) / sd(sims[, "mean_stops"]), 1)` SDs or `r f(100 * (real[["mean_stops"]] / mean(sims[, "mean_stops"]) - 1), 0)`% higher. The random means are right-skewed (`r f(skew_moment(sims[, "mean_stops"]), 2)`; Q-Q plot in @fig-q4), so we quote tail probabilities rather than $z$-scores. The longest trip (`r f(real[["max_stops"]], 0)`) is matched by `r sum(sims[, "max_stops"] >= real[["max_stops"]])` random network; `r pc(real_cum[16], 0)` of the pairs are within 16 stops in the real network against `r pc(mean(cum[, 16]), 0)` in the average random one. **Interchanges.** The real network is typical: `r f(real[["mean_changes"]], 3)` against `r f(mean(sims[, "mean_changes"]), 3)` (SD `r f(sd(sims[, "mean_changes"]), 3)`), and `r pc(real[["share_2plus_changes"]])` of pairs need two or more against `r pc(mean(sims[, "share_2plus_changes"]))`. The answer is no in stops and about the same in interchanges.
+
+```{r fig-q4}
+#| label: fig-q4
+#| fig-cap: "The real network (red line, blue curve) against the 1,000 random networks: mean stops, c.d.f. (first 50 random networks), Q-Q plot of the random means, and mean interchanges."
+#| fig-width: 6.6
+#| fig-height: 1.7
+xs <- seq_along(real_cum)
+hist_real <- function(mm, main) {                                    # random networks, real network as a red line
+  v <- sims[, mm]; rng <- range(c(v, real[[mm]]))
+  hist(v, breaks = 25, col = "grey85", border = "white", xlim = rng + c(-0.05, 0.05) * diff(rng),
+       main = main, xlab = "random networks", ylab = "")
+  abline(v = real[[mm]], col = "firebrick", lwd = 2)
+}
+par(mfrow = c(1, 4)); par(cex = 1, mai = c(0.4, 0.42, 0.2, 0.04), mgp = c(1.15, 0.4, 0), cex.main = 0.78, cex.axis = 0.6, cex.lab = 0.68)
+hist_real("mean_stops", "Mean stops")
+plot(xs, real_cum, type = "n", xlim = c(0, 55), ylim = c(0, 1),
+     xlab = "minimum number of stops", ylab = "proportion", main = "c.d.f. of stops")
+for (r in seq_len(min(50, nrow(cum)))) lines(c(0, xs), c(0, cum[r, ]), type = "s", col = adjustcolor(orange, alpha.f = 0.35))
+lines(c(0, xs), c(0, real_cum), type = "s", col = blue, lwd = 3)
+legend("bottomright", legend = c("real network", "random networks"), col = c(blue, orange), lwd = c(3, 1.5), bty = "n", cex = 0.58)
+qqnorm(sims[, "mean_stops"], pch = 16, cex = 0.3, col = blue, main = "Q-Q: mean stops",
+       xlab = "Normal quantiles", ylab = "mean stops")
+qqline(sims[, "mean_stops"], col = "firebrick", lwd = 1.5)
+hist_real("mean_changes", "Mean interchanges")
+```
+
+### What explains the gap? (T4, T10) {#sec-why}
+
+Trip length has two parts: the outer arms, from each end to an interchange, and the core, between interchanges. Both are longer in the real network. A station is on average `r f(real[["mean_to_interchange"]], 1)` stops from its nearest interchange against `r f(mean(sims[, "mean_to_interchange"]), 1)` in the random networks (tail probability `r f(mc_tail[["mean_to_interchange"]], 3)`); the farthest, `r short(far_st[far_st == "Raja Nahar Singh"])` (Violet Line) and `r short(far_st[far_st != "Raja Nahar Singh"])` (Green Line), are `r max(d_ic0)` stops from any interchange. Two interchange stations are `r f(real[["mean_between_ic"]], 1)` stops apart against `r f(mean(sims[, "mean_between_ic"]), 1)` (tail probability `r f(mc_tail[["mean_between_ic"]], 3)`). Regressing mean stops on both parts across the `r f(nrep, 0)` random networks ($R^2=$ `r f(r2_q4)`; supplement) splits the real network's `r f(arm_gap, 1)`-stop gap into `r f(gap_arm, 1)` stops of longer arms and `r f(gap_core, 1)` of wider core spacing, explaining `r pc((gap_arm + gap_core) / arm_gap, 0)` and leaving `r f(gap_left, 1)` stop over. Real trips are longer mostly between interchanges: real lines meet only where they cross on the map, while random placement creates shortcuts. The real interchanges are also less central than random ones (odds ratio `r f(real[["or_central"]])` against a random average of `r f(mean(sims[, "or_central"]), 1)`, `r if (all(sims[, "or_central"] > real[["or_central"]])) "lower than in every random network" else "lower than in most random networks"`), while the Q3 slope of centrality on distance appears there too (`r f(mean(sims[, "slope_centrality"]))` on average against `r f(real[["slope_centrality"]])`). This does not contradict Q3, because the two references ask different questions: Q3 shuffled the interchange labels on the fixed real map ($p=$ `r f(p_perm, 3)`) and asked whether the real interchanges are more central than other stations of the same network, which they are, slightly, while here the interchanges are rewired onto random spots and every centrality is recomputed, which asks how central interchanges would be in a random layout, where each one creates shortcuts around itself. The random networks are a reference, not a rival design (real interchanges must be where lines cross), so this does not say that the real network is badly planned.
+
+### Non-sampling error in the census {#sec-nonsamp}
+
+A census has no sampling error but can have non-sampling error, here from our two modelling choices (@sec-operational). Merging the two Madhuban Chowk stations changes the mean stops by `r f(sens$MeanStops[2] - sens$MeanStops[1])` (`r f(100 * (sens$MeanStops[2] / sens$MeanStops[1] - 1), 1)`%); dropping the Airport Express, which needs a separate ticket, changes it by `r f(sens$MeanStops[3] - sens$MeanStops[1])` (`r f(100 * (sens$MeanStops[3] / sens$MeanStops[1] - 1), 1)`%; supplement). For the larger change we redrew the `r f(rnd_ae$reps, 0)` random networks without the Airport Express: the gap is then `r f(ae_gap, 2)` stops (`r f(arm_gap, 2)` with it) and `r if (ae_ge == 0) "no random network reaches" else paste(ae_ge, "random networks reach")` the real value, so the answer to Q4 does not depend on it.
+
+# Conclusion and Communication {#sec-conclusion}
+
+## Answers to the research question
+
+**Q1, distribution.** The minimum number of stops has one broad peak and a moderate right skew (`r f(m$g1)`) with Normal-like tails (kurtosis `r f(m$b2, 1)`), made of real trips between the far ends of the Violet and Green lines; a random sample describes it as sampling theory predicts, a convenience sample does not, however many pairs are drawn. **Q2, stops and interchanges.** More interchanges go with more stops, but weakly ($r=$ `r f(o2$r)`, $R^2=$ `r f(o2$R2, 2)`), and the two minima often belong to different routes; direct trips are shorter, but this compares groups of pairs and does not show that changing train adds stops. **Q3, centrality.** The most central station is `r short(stn$station[ord[1]])` and the least central `r short(stn$station[far])`; the distance to the nearest interchange explains most of it ($R^2=$ `r f(o3$R2, 2)`), largely by geometry, and interchanges are only somewhat more likely to be central. **Q4, real or random.** In stops the real network is less compact than every random network with the same lines: its trips are `r f(arm_gap, 1)`\ stops longer on average; longer outer arms (`r f(gap_arm, 1)`\ stops) and, even more, wider spacing between interchanges (`r f(gap_core, 1)`\ stops) explain about `r pc((gap_arm + gap_core) / arm_gap, 0)` of that gap. In interchanges it is ordinary.
+
+## What surprised us?
+
+First, how badly a convenient sample misleads: only `r pc(samp$within1[4], 2)` of the convenience samples land within one stop of the true mean, against `r pc(samp$within1[3], 0)` of random samples of the same size. Second, the Airport Express, a line of only seven stations, holds the three most central stations: "stops" depend on how stations are spaced. Third, for `r pc(route[["share"]], 0)` of the pairs no route has both the fewest stops and the fewest interchanges.
+
+## Limitations and next steps
+
+The `r f(N, 0)` pairs share stations, so we quote no p-values or intervals for pairs. Counting stops ignores distance, travel time, waiting, the walk between platforms and ticketing barriers (such as the Airport Express fare gates); a constant time per stop would only rescale the mean and SD and leave the skewness, kurtosis and correlations unchanged, but unequal spacing might change them. The station lists are secondary data typed by us from Wikipedia because the official timetable files did not open. Next steps: use travel times once the official data can be opened, add the Aqua Line and Rapid Metro, and ask with the same experiment how much moving a few interchanges would shorten the average trip.
+
+## References {.unnumbered}
+
+- Wikipedia, articles on the nine Delhi Metro lines, read 17 and 18 October 2026.
+- DMRC, official network map (August 2026) and interactive map, accessed 30 October 2026.
+- Spiegelhalter, D. (2019). *The Art of Statistics*. Pelican, pp. 14-15 (the PPDAC cycle).
+- Rokicki, T. et al. (2014). The diameter of the Rubik's Cube group is twenty. *SIAM Rev.* 56.
+
+## Individual contributions
+
+**Arush Choudhary:** I compiled and cleaned the station table (`delhi_metro_lines.csv`), wrote all three base R scripts (`metro_network.R`, `notes_tools.R` and `analysis.R`), ran all the statistical analyses and simulations for Q1 to Q4, independently researched, implemented and interpreted the categorical analyses (odds ratios and $\chi^2$, T11 and T12), and built the Quarto report and the supplement.
+
+**Dhruv Bhagat:** I independently verified the `r ns` stations, the `r length(net$lines)` train services and the `r nrow(ic)` interchanges against the DMRC interactive map (30 October 2026) and route planner, drafted the interpretation of Q3 (centrality), and co-built the presentation slides, presenting Q1 to Q3.
+
+**Sujal Kumar Swain:** I independently verified the station routing and the `r nrow(ic)` interchanges against the DMRC interactive map (30 October 2026), co-drafted the Problem, Plan, Q4 and Conclusion text, and co-built the presentation slides, presenting Q4 and the takeaways.
