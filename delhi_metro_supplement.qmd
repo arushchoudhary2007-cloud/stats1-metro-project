@@ -1,0 +1,340 @@
+---
+title: "Supplementary material"
+subtitle: "How far apart are the stations of the Delhi Metro? A PPDAC study of the fewest stops and interchanges between every pair of stations"
+author:
+  - "Arush Choudhary (BSD-DH-2606)"
+  - "Dhruv Bhagat (BSD-DH-2612)"
+  - "Sujal Kumar Swain (BSD-DH-2622)"
+format:
+  pdf:
+    pdf-engine: pdflatex
+    documentclass: article
+    papersize: a4
+    fontsize: 11pt
+    geometry:
+      - margin=2cm
+    number-sections: true
+    colorlinks: true
+    fig-pos: "H"
+    include-in-header:
+      text: |
+        \usepackage{booktabs}
+        \usepackage{longtable}
+        \usepackage{float}
+        \floatplacement{table}{H}
+        \floatplacement{figure}{H}
+        \usepackage{etoolbox}
+        \AtBeginEnvironment{tabular}{\small}
+        \AtBeginEnvironment{longtable}{\small}
+        \setlength{\tabcolsep}{4.5pt}
+        \fvset{fontsize=\fontsize{6.6pt}{7.6pt}\selectfont}
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+options(width = 100, knitr.kable.NA = "")
+knitr::opts_chunk$set(fig.align = "center")
+source("analysis.R")              # all computations of the report (base R); same objects as in the report
+
+f   <- function(v, d = 2) formatC(v, format = "f", digits = d, big.mark = ",")
+pc  <- function(v, d = 1) paste0(formatC(100 * v, format = "f", digits = d), "\\%")
+sci <- function(v) vapply(v, function(x) {                         # a.b x 10^k in LaTeX, e.g. $5.1 \times 10^{-3}$
+  if (x == 0) return("$0$")
+  e <- floor(log10(abs(x))); m <- round(x / 10^e, 1)
+  if (abs(m) >= 10) { m <- m / 10; e <- e + 1 }
+  sprintf("$%s \\times 10^{%d}$", formatC(m, format = "f", digits = 1), e)
+}, character(1))
+short <- function(s) sub(" \\(.*\\)$", "", s)
+kt  <- function(df, align = NULL, spec = NULL, long = FALSE) {       # LaTeX table, booktabs
+  k <- knitr::kable(df, format = "latex", booktabs = TRUE, longtable = long, row.names = FALSE, linesep = "",
+                    escape = FALSE, align = if (is.null(spec)) align else "l")
+  if (!is.null(spec)) {
+    env <- if (long) "longtable" else "tabular"
+    mt <- regexpr(paste0("\\\\begin\\{", env, "\\}(\\[[a-z]\\])?\\{[^}]*\\}"), k[1])
+    regmatches(k[1], mt) <- paste0("\\begin{", env, "}{", spec, "}")
+  }
+  k[1] <- sub("\\\\begin\\{table\\}", "\\\\begin{table}[H]", k[1])    # keep every table where it is written
+  k
+}
+blue <- "#1f4e8c"; orange <- "#d9822b"
+pd <- possible_duplicates(L)
+pd_other <- if (nrow(pd) == 0) pd else pd[gsub("[0-9]+", "#", pd$a) != gsub("[0-9]+", "#", pd$b), ]
+```
+
+# Files and how to reproduce
+
+This supplement holds what the report leaves out, as the project guidelines ask: checks, full tables and the code. Everything in the report and here is computed by `analysis.R` from the one hand-made file `delhi_metro_lines.csv`; the report's figure and table code is in `delhi_metro_ppdac_report.qmd`.
+
+| File | Content |
+|:--------------|:----------|
+| `delhi_metro_lines.csv` | station table (320 rows, one per station per train service): the only hand-made input |
+| `metro_network.R` | network, minimum stops and interchanges, stops on a fewest-interchange route, random networks |
+| `notes_tools.R` | standard statistical formulas written out by hand (moments, grouped data, combined variance, least squares, sampling, $\chi^2$) |
+| `analysis.R` | every number of the report; writes the two CSV files below |
+| `delhi_metro_pairs.csv` | pair table, `r f(N, 0)` rows: `pair_id`, `from_station`, `to_station`, `min_stops`, `min_interchanges`, `stops_at_min_interchanges`, `same_line` |
+| `delhi_metro_stations.csv` | station table, `r ns` rows: `station`, `lines`, `interchange`, `centrality`, `mean_ic`, `to_interchange`, `central` |
+| `random_networks_1000.rds` | saved result of the 1,000 random networks (seed `r format(seed, scientific = FALSE)`); recomputed in about five minutes if absent |
+| `random_networks_1000_no_airport_express.rds` | the same 1,000 random networks drawn without the Airport Express (Section 8); also recomputed if absent |
+
+: Files of the project.
+
+To reproduce, put the files in one folder and render `delhi_metro_ppdac_report.qmd` and `delhi_metro_supplement.qmd` with Quarto (only base R is used for the analysis; Quarto needs the R packages knitr and rmarkdown for rendering). The session information is at the end.
+
+# Checks of the station table
+
+```{r tbl-s-lines}
+#| label: tbl-s-lines
+#| tbl-cap: "Stations per train service and per coloured line in the station table (the two Magenta sections count as one coloured line)."
+svc <- unique(L[c("line", "group", "circular")])
+svc$Stations <- as.integer(table(L$line)[svc$line])
+sv <- data.frame(Service = svc$line, Group = sub("-North", "", svc$group), Stations = svc$Stations, Loop = ifelse(svc$circular, "yes", "no"))
+cl <- data.frame(Line = names(observed), Stations = as.integer(observed))
+kt(sv, align = "llrl")
+```
+
+```{r tbl-s-lines2}
+#| label: tbl-s-lines2
+#| tbl-cap: "Distinct stations on each coloured line (an interchange station is counted on every line it belongs to)."
+kt(cl[order(-cl$Stations), ], align = "lr")
+```
+
+The table has `r nrow(Lraw)` rows for `r ns` distinct stations; the sum over coloured lines is `r sum(observed)`, which is `r ns` plus the `r sum(observed) - ns` extra memberships of the `r nrow(ic)` interchange stations. Names that differ by at most two characters (`adist`) could be duplicates: there are `r nrow(pd)` such pairs, `r nrow(pd) - nrow(pd_other)` of which differ only in a number (Noida Sector 52 and 59, Dwarka Sector 12 and 13, ...) and are different stations; the others are `r if (nrow(pd_other) == 0) "none" else paste(apply(pd_other, 1, function(r) paste(r[1], "/", r[2])), collapse = "; ")`. The station table was verified against DMRC's official network map (August 2026) and interactive map (report, Sections 2 and 5.4).
+
+```{r tbl-s-ic}
+#| label: tbl-s-ic
+#| tbl-cap: "The interchange stations (two or more coloured lines) of the study population."
+ic2 <- data.frame(Station = short(ic$station), Lines = sub("-North", "", ic$lines))   # the two Magenta sections are one line
+kt(ic2, spec = "p{6.5cm}p{9cm}", long = TRUE)
+```
+
+# Checks of the distance code
+
+The distances come from `metro_network.R` (breadth-first search for stops, a level search in which riding costs nothing and changing service costs one for interchanges). Besides the basic properties we recompute both matrices with a different method, the Floyd-Warshall algorithm, in base R.
+
+```{r chk}
+#| include: false
+fw <- function(W) { for (kk in seq_len(nrow(W))) W <- pmin(W, outer(W[, kk], W[kk, ], "+")); W }
+A <- matrix(Inf, ns, ns); diag(A) <- 0
+for (i in seq_len(ns)) A[i, net$adj[[i]]] <- 1
+D_fw <- fw(A)                                                       # fewest stops: Floyd-Warshall on stations
+Wst <- matrix(Inf, net$S, net$S); diag(Wst) <- 0                    # fewest interchanges: Floyd-Warshall on (station, service) states
+for (i in seq_len(net$S)) { Wst[i, net$along[[i]]] <- 0; Wst[i, net$paid[[i]]] <- 1 }
+Wst <- fw(Wst)
+I_fw <- t(vapply(seq_len(ns), function(s) vapply(seq_len(ns), function(t) min(Wst[net$stat_states[[s]], net$stat_states[[t]]]), numeric(1)), numeric(ns)))
+tri <- all(vapply(seq_len(ns), function(j) all(D <= outer(D[, j], D[j, ], "+")), logical(1)))
+chk <- data.frame(
+  Check = c("distance matrix symmetric", "zero diagonal, all other distances at least 1", "network connected (no missing distance)",
+            "triangle inequality $d(i,k)\\le d(i,j)+d(j,k)$ for all triples", "fewest stops equal to Floyd-Warshall on stations (all pairs)",
+            "fewest interchanges equal to Floyd-Warshall on states (all pairs)", "pair table agrees with the matrices (stops, interchanges)",
+            "stops on a fewest-interchange route never below the fewest stops", "no pair needs more than 3 interchanges"),
+  Result = c(isSymmetric(D), all(diag(D) == 0) && all(D[upper.tri(D)] >= 1), !anyNA(D) && !anyNA(I), tri,
+             all(D == D_fw), all(I == I_fw), all(P$min_stops == D[p]) && all(P$min_interchanges == I[p]), all(Sx >= D), max(I) <= 3))
+chk$Result <- ifelse(chk$Result, "passed", "FAILED")
+```
+
+```{r tbl-s-chk}
+#| label: tbl-s-chk
+#| tbl-cap: "Checks of the distance code."
+kt(chk, align = "ll")
+```
+
+# Frequency table and grouped data
+
+```{r tbl-s-freq}
+#| label: tbl-s-freq
+#| tbl-cap: "Number of pairs at each minimum number of stops (the whole census)."
+ftab <- table(factor(x, levels = seq_len(max(x))))
+blk  <- ceiling(max(x) / 4)
+fdf  <- do.call(cbind, lapply(0:3, function(b) {
+  i <- seq_len(blk) + b * blk
+  data.frame(Stops = ifelse(i <= max(x), i, NA), Pairs = ifelse(i <= max(x), as.integer(ftab[pmin(i, max(x))]), NA))
+}))
+kt(fdf, align = "rrrrrrrr")
+```
+
+```{r tbl-s-group}
+#| label: tbl-s-group
+#| tbl-cap: "Grouped data, classes of five stops (real limits $0.5, 5.5,\\dots$), assumed mean $A=18$, $u=(\\text{midpoint}-A)/h$ with $h=5$."
+uu <- (gd_tab$mid - gd_A) / 5
+gt <- data.frame(Class = paste0(gd_tab$lower + 0.5, " to ", gd_tab$upper - 0.5), Midpoint = f(gd_tab$mid, 1), `$f$` = f(gd_tab$f, 0),
+                 `cumulative $f$` = f(gd_tab$cf, 0), `$u$` = f(uu, 0), `$fu$` = f(gd_tab$f * uu, 0), `$fu^2$` = f(gd_tab$f * uu^2, 0), check.names = FALSE)
+gt <- rbind(gt, data.frame(Class = "Total", Midpoint = "", `$f$` = f(sum(gd_tab$f), 0), `cumulative $f$` = "", `$u$` = "",
+                           `$fu$` = f(sum(gd_tab$f * uu), 0), `$fu^2$` = f(sum(gd_tab$f * uu^2), 0), check.names = FALSE))
+kt(gt, align = "lrrrrrr")
+```
+
+```{r tbl-s-gq}
+#| label: tbl-s-gq
+#| tbl-cap: "Grouped against exact summary measures. Quartile $=L+\\left(\\frac{Nr-(cf)_{\\text{prev}}}{f}\\right)h$."
+gq <- do.call(rbind, lapply(1:3, function(i) {
+  r <- i / 4; N_ <- sum(gd_tab$f); j <- which(gd_tab$cf >= N_ * r)[1]; cfp <- if (j > 1) gd_tab$cf[j - 1] else 0
+  data.frame(Measure = paste0("Quartile ", i), Grouped = f(gd_q[i], 2), Exact = f(qs[i], 0),
+             Computation = sprintf("class %s to %s: $L=%s$, $(cf)_{prev}=%s$, $f=%s$", gd_tab$lower[j] + 0.5, gd_tab$upper[j] - 0.5, gd_tab$lower[j], f(cfp, 0), f(gd_tab$f[j], 0)))
+}))
+gq <- rbind(data.frame(Measure = "Mean", Grouped = f(gd_mean, 3), Exact = f(mu, 3), Computation = "$\\bar x=A+h\\sum fu/N$"),
+            data.frame(Measure = "Variance", Grouped = f(gd_var, 2), Exact = f(sigma^2, 2), Computation = "$h^2\\left[\\sum fu^2/N-(\\sum fu/N)^2\\right]$"), gq)
+kt(gq, spec = "lrrp{8cm}")
+```
+
+# Regression details
+
+```{r tbl-s-reg}
+#| label: tbl-s-reg
+#| tbl-cap: "Identities and quantities of the two least squares fits."
+rg <- data.frame(
+  Quantity = c("$\\sum k_i$", "$\\sum k_ix_i$", "$S_{xx}\\sum k_i^2$", "$\\sum e_i$", "$\\sum e_ix_i$", "largest gap to \\texttt{lm()}",
+               "$S_{xx}$", "$S_{xy}$", "$S_{yy}$", "$\\widehat{\\operatorname{Var}}(\\hat\\beta_1)=\\hat\\sigma^2/S_{xx}$", "$\\widehat{\\operatorname{Var}}(\\hat\\beta_0)=\\hat\\sigma^2(1/n+\\bar x^2/S_{xx})$",
+               "$\\widehat{\\operatorname{Cov}}(\\hat\\beta_0,\\hat\\beta_1)=-\\bar x\\hat\\sigma^2/S_{xx}$", "$b_{yx}$, $b_{xy}$", "$b_{yx}b_{xy}$ and $r^2$"),
+  `Q2: stops on interchanges` = c(sci(o2$k_checks[["sum_k"]]), f(o2$k_checks[["sum_kx"]], 6), f(o2$k_checks[["sum_k2_Sxx"]], 6), sci(o2$normal_eq[["sum_e"]]), sci(o2$normal_eq[["sum_ex"]]),
+                                  sci(lm_gap), f(o2$Sxx, 1), f(o2$Sxy, 1), f(o2$Syy, 0), sci(o2$var_b1), sci(o2$var_b0), sci(o2$cov_b0b1),
+                                  paste(f(o2$b_yx, 4), ",", f(o2$b_xy, 4)), paste(f(o2$b_yx * o2$b_xy, 5), "and", f(o2$r^2, 5))),
+  `Q3: centrality on distance` = c(sci(o3$k_checks[["sum_k"]]), f(o3$k_checks[["sum_kx"]], 6), f(o3$k_checks[["sum_k2_Sxx"]], 6), sci(o3$normal_eq[["sum_e"]]), sci(o3$normal_eq[["sum_ex"]]),
+                                   sci(max(abs(coef(fit3) - c(o3$b0, o3$b1)))), f(o3$Sxx, 1), f(o3$Sxy, 1), f(o3$Syy, 1), sci(o3$var_b1), sci(o3$var_b0), sci(o3$cov_b0b1),
+                                   paste(f(o3$b_yx, 4), ",", f(o3$b_xy, 4)), paste(f(o3$b_yx * o3$b_xy, 5), "and", f(o3$r^2, 5))),
+  check.names = FALSE)
+kt(rg, align = "lrr")
+```
+
+The model-based variances are written out because least-squares theory gives them; for the census of pairs they are not sampling errors (the pairs are not independent), but the samples experiment below shows that the formulas describe samples of pairs well.
+
+```{r tbl-s-trf}
+#| label: tbl-s-trf
+#| tbl-cap: "Remedial transformation of the response in Q2: $R^2$, skewness and kurtosis of the residuals, and the ratio of the residual SD of the 199 pairs with three interchanges to that of the pairs with two."
+tr1 <- function(o) c(f(o$R2, 3), f(skew_moment(o$resid)), f(kurtosis_moment(o$resid)), f(tapply(o$resid, k, sd)[["3"]] / tapply(o$resid, k, sd)[["2"]]))
+trf <- data.frame(Response = c("stops", "$\\sqrt{\\text{stops}}$", "$\\log(\\text{stops})$"), rbind(tr1(o2), tr1(o2t), tr1(o2l)), check.names = FALSE)
+names(trf)[2:5] <- c("$R^2$", "Residual skewness", "Residual kurtosis", "SD ratio (3 vs 2 interchanges)")
+kt(trf, align = "lrrrr")
+```
+
+```{r tbl-s-regs}
+#| label: tbl-s-regs
+#| tbl-cap: "The regression of Q2 in 2,000 simple random samples of $n$ pairs: averages over the samples against the census values (the SD of the slope, and the average standard error $\\hat\\sigma/\\sqrt{S_{xx}}$)."
+rs <- data.frame(Quantity = c("slope $\\hat\\beta_1$: average (census 4.264)", "slope: SD over samples", "slope: average of $\\hat\\sigma/\\sqrt{S_{xx}}$",
+                              "intercept $\\hat\\beta_0$: average (census 11.974)", "SSE$/(n-2)$: average (census 60.84)", "SSE$/n$: average"),
+                 `$n=30$` = f(c(reg_s["mean_b1", "Random 30"], reg_s["sd_b1", "Random 30"], reg_s["mean_se_b1", "Random 30"], reg_s["mean_b0", "Random 30"], reg_s["mean_mse", "Random 30"], reg_s["mean_mse_n", "Random 30"]), 3),
+                 `$n=300$` = f(c(reg_s["mean_b1", "Random 300"], reg_s["sd_b1", "Random 300"], reg_s["mean_se_b1", "Random 300"], reg_s["mean_b0", "Random 300"], reg_s["mean_mse", "Random 300"], reg_s["mean_mse_n", "Random 300"]), 3),
+                 check.names = FALSE)
+kt(rs, align = "lrr")
+```
+
+# Cross tabulation and randomization details
+
+```{r tbl-s-43}
+#| label: tbl-s-43
+#| tbl-cap: "Interchanges by trip length (short: at most the first quartile, 11 stops; medium: 12 to 22; long: more than 22). Counts with the counts expected under independence in brackets; the last column is the row's contribution to $\\chi^2=\\sum(O-E)^2/E$."
+E43 <- cs43$expected; ctb <- unclass(ct43)
+c43 <- data.frame(Interchanges = rownames(ctb),
+                  Short = sprintf("%s (%s)", f(ctb[, 1], 0), f(E43[, 1], 1)), Medium = sprintf("%s (%s)", f(ctb[, 2], 0), f(E43[, 2], 1)), Long = sprintf("%s (%s)", f(ctb[, 3], 0), f(E43[, 3], 1)),
+                  `Contribution` = f(rowSums((ctb - E43)^2 / E43), 1))
+c43 <- rbind(c43, data.frame(Interchanges = "Total", Short = f(colSums(ctb)[1], 0), Medium = f(colSums(ctb)[2], 0), Long = f(colSums(ctb)[3], 0), Contribution = f(cs43$chi2, 1)))
+kt(c43, align = "lrrrr")
+```
+
+The table has $(4-1)(3-1)=6$ degrees of freedom. The randomization reference for the stations (Table 5 of the report) shuffles which `r sum(stn$interchange)` stations are interchanges `r f(B_perm, 0)` times: the observed $\chi^2$ is `r f(cs3$chi2, 3)`, the shuffled values average `r f(mean(chi_perm), 2)` (95th percentile `r f(quantile(chi_perm, 0.95), 2)`), and `r f(sum(chi_perm >= cs3$chi2 - 1e-9), 0)` of the `r f(B_perm, 0)` shuffles are as large, so $p=$ `r f(p_perm, 4)` with the $+1$ correction. The odds ratio of a long trip for a trip with a change is `r f(OR_s[1])`, `r f(OR_s[2])` and `r f(OR_s[3])` when "long" means more than `r f(cuts[1], 0)`, `r f(cuts[2], 0)` and `r f(cuts[3], 0)` stops.
+
+# The 1,000 random networks in full
+
+```{r tbl-s-mc}
+#| label: tbl-s-mc
+#| tbl-cap: "Every statistic kept for the real network and the 1,000 random networks: share of random networks at or below the real value (with its Monte Carlo standard error) and the tail probability $(1+k)/(B+1)$, where $k$ is the number of random networks at or above the real value."
+nm  <- c("mean_stops", "median_stops", "max_stops", "mean_changes", "share_2plus_changes", "mean_to_interchange", "max_to_interchange", "or_central", "slope_centrality", "r2_centrality", "mean_between_ic")
+lab <- c("Mean stops", "Median stops", "Longest trip", "Mean interchanges", "Share of pairs with 2+ interchanges", "Mean stops to nearest interchange", "Largest distance to an interchange",
+         "Odds ratio, interchange and central", "Slope of centrality on distance", "$R^2$ of centrality on distance", "Mean stops between interchanges")
+d3  <- c(2, 1, 0, 3, 3, 2, 0, 2, 2, 2, 2)
+mc <- data.frame(Statistic = lab, Real = mapply(function(r, d) f(real[[r]], d), nm, d3), `Random mean` = mapply(function(r, d) f(mean(sims[, r]), d + 1), nm, d3),
+                 `Random SD` = mapply(function(r, d) f(sd(sims[, r]), d + 1), nm, d3),
+                 Range = mapply(function(r, d) paste(f(min(sims[, r]), d), "to", f(max(sims[, r]), d)), nm, d3),
+                 `At or below` = sprintf("%s (%s)", pc(prop[nm], 1), f(100 * mc_se[nm], 1)), `Tail` = f(mc_tail[nm], 3), check.names = FALSE)
+kt(mc, spec = "p{5.4cm}rrrrrr")
+```
+
+```{r tbl-s-inv}
+#| label: tbl-s-inv
+#| tbl-cap: "What the randomization holds fixed, checked in every one of the 1,000 random networks."
+iv <- data.frame(Quantity = c("number of distinct stations", "number of interchange stations", "stations on each line", "lines meeting at each interchange"),
+                 `Networks where it equals the real network` = sprintf("%s of %s", f(colSums(rnd$inv), 0), f(nrep, 0)), check.names = FALSE)
+kt(iv, align = "lr")
+```
+
+What explains the gap (report, "What explains the gap?"): a trip is split into its outer arms (stops from each end to the nearest interchange) and its core (stops between interchanges). Across the `r f(nrep, 0)` random networks, the regression of mean stops on the arms alone has $R^2=$ `r f(arm$R2, 3)`, slope `r f(arm$b1, 3)` and intercept `r f(arm$b0, 3)`, and would credit the arms with only `r f(arm_part, 3)` of the `r f(arm_gap, 3)`-stop gap. Arms and core are negatively correlated across the random networks ($r=$ `r f(cor(sims[, "mean_to_interchange"], sims[, "mean_between_ic"]), 3)`), so that one-predictor slope is too small. With both predictors (`lm()`, mean stops on mean stops to the nearest interchange and mean stops between two interchange stations):
+
+```{r tbl-s-q4}
+#| label: tbl-s-q4
+#| tbl-cap: "Breakdown of the gap in mean stops between the real network and the average random network, from the regression across the 1,000 random networks on arms and core spacing. The fitted plane passes through the random means, so the two parts add up to the predicted gap."
+cf  <- summary(fit_q4)$coefficients
+q4t <- data.frame(Quantity = c("intercept", "coefficient of arms (mean stops to nearest interchange)", "coefficient of core (mean stops between interchanges)",
+                               "$R^2$ (arms only: ", "residual SD", "real arms, random mean", "real core, random mean (random networks at or above real)",
+                               "gap in mean stops: real against random mean", "part due to longer arms", "part due to wider core spacing",
+                               "explained (share of the gap)", "left over (in residual SDs)"),
+                  Value = c(f(b_q4[[1]], 3), f(b_q4[[2]], 3), f(b_q4[[3]], 3), "", f(sd(resid(fit_q4)), 3),
+                            paste0(f(real[["mean_to_interchange"]], 3), ", ", f(mean(sims[, "mean_to_interchange"]), 3)),
+                            sprintf("%s, %s (%d)", f(real[["mean_between_ic"]], 3), f(mean(sims[, "mean_between_ic"]), 3), n_core_ge),
+                            f(arm_gap, 3), f(gap_arm, 3), f(gap_core, 3),
+                            sprintf("%s (%s)", f(gap_arm + gap_core, 3), pc((gap_arm + gap_core) / arm_gap, 1)),
+                            sprintf("%s (%s)", f(gap_left, 3), f(gap_left / sd(resid(fit_q4)), 2))))
+q4t$Quantity[4] <- paste0("$R^2$ (arms only: ", f(arm$R2, 3), ")"); q4t$Value[4] <- f(r2_q4, 3)
+kt(q4t, spec = "p{10cm}r")
+```
+
+The core spacing carries more of the gap than the arms: real lines meet only where they cross on the map, which spreads the interchanges apart, while random placement creates shortcuts. This is a breakdown of trip length into two parts, not a separate cause.
+
+# Non-sampling error: alternative modelling decisions
+
+```{r tbl-s-sens}
+#| label: tbl-s-sens
+#| tbl-cap: "The census under alternative modelling decisions (Madhuban Chowk as one station; the Airport Express left out)."
+kt(data.frame(Scenario = sens$Scenario, Stations = sens$Stations, Interchanges = sens$Interchanges, `Mean stops` = f(sens$MeanStops), Median = f(sens$MedianStops, 0),
+              Longest = sens$Longest, `Mean interchanges` = f(sens$MeanInterchanges, 3), check.names = FALSE), align = "lrrrrrr")
+```
+
+Leaving out the Airport Express moves the mean most, so the `r f(rnd_ae$reps, 0)` random networks were drawn again from the network without it (seed `r format(seed, scientific = FALSE)`, saved in `random_networks_1000_no_airport_express.rds`; the randomization held the same quantities fixed in `r f(sum(apply(rnd_ae$inv, 1, all)), 0)` of them). The real network then averages `r f(ae_real, 3)` stops against `r f(ae_rand, 3)` for the average random network (SD `r f(ae_sd, 3)`, largest `r f(max(rnd_ae$sims[, "mean_stops"]), 3)`): a gap of `r f(ae_gap, 3)` stops, against `r f(arm_gap, 3)` with the Airport Express, with `r if (ae_ge == 0) "no random network" else ae_ge` at or above the real value (tail probability `r f(ae_tail, 3)`).
+
+# Stations in more detail
+
+```{r tbl-s-st}
+#| label: tbl-s-st
+#| tbl-cap: "The five most central and the five least central stations: mean stops and mean interchanges to the other stations, $z$-score of the mean stops, and stops to the nearest interchange."
+s5 <- c(ord[1:5], rev(ord)[1:5])
+kt(data.frame(Station = short(stn$station[s5]), `Line(s)` = stn$lines[s5], Stops = f(stn$centrality[s5]), `$z$` = f(z_cent[s5], 1),
+              Interchanges = f(stn$mean_ic[s5]), `To interchange` = stn$to_interchange[s5], check.names = FALSE), spec = "p{4.9cm}p{4.3cm}rrrr")
+```
+
+```{r tbl-s-res}
+#| label: tbl-s-res
+#| tbl-cap: "The stations farthest above the line of Q3 (less central than their distance to an interchange suggests): mean stops, stops to the nearest interchange and residual."
+r4 <- order(o3$resid, decreasing = TRUE)[1:4]
+kt(data.frame(Station = short(stn$station[r4]), `Line(s)` = stn$lines[r4], Stops = f(stn$centrality[r4]), `To interchange` = stn$to_interchange[r4],
+              Residual = f(o3$resid[r4]), check.names = FALSE), spec = "p{4.9cm}p{4.3cm}rrr")
+```
+
+```{r fig-s-means}
+#| label: fig-s-means
+#| fig-cap: "The 2,000 sample means of each kind (dashed line: the true mean; conv.: convenience sample; WOR, WR: without and with replacement)."
+#| fig-width: 6.6
+#| fig-height: 2.4
+par(mar = c(3.8, 3.8, 0.8, 0.5), mgp = c(2.4, 0.7, 0), cex.axis = 0.7)
+bx <- c(lapply(res, function(r) r[, "mean"]), lapply(res_st, function(r) r[, "mean"]))
+names(bx) <- c("pairs\n30", "pairs\n100", "pairs\n300", "conv.\n300", "stations\n60 WOR", "stations\n120 WOR", "stations\n60 WR", "stations\n120 WR")
+boxplot(bx, col = c(rep("grey85", 3), "#f4b183", rep("#bdd7ee", 4)), pch = 16, cex = 0.3, ylab = "sample mean")
+abline(h = mu, lty = 2, col = "firebrick")
+```
+
+Two further checks from the samples of pairs. The estimator $N\bar y$ of a population total, applied to the indicator of needing two or more interchanges in the samples of 300 pairs, estimates the `r f(total[["true"]], 0)` such pairs at `r f(total[["mean_est"]], 0)` on average, with SD `r f(total[["sd_obs"]], 0)` against `r f(total[["sd_formula"]], 0)` from the formula with the finite-population correction. In the samples of 30 pairs the variance with divisor $n$ averages `r f(bessel[["mean_s2_n"]], 1)` and with divisor $n-1$ `r f(bessel[["mean_s2"]], 1)`, against $\sigma^2=$ `r f(sigma^2, 1)`: dividing by $n$ is `r f(100 * (1 - bessel[["mean_s2_n"]] / bessel[["mean_s2"]]), 1)`% too small, the factor $(n-1)/n$.
+
+# Code
+
+The three scripts are printed in full; the code of the figures and tables is in the report's `.qmd`.
+
+```{r code}
+#| results: asis
+show_code <- function(file) {
+  cat("\n\n## `", file, "`\n\n", sep = "")
+  cat("```r\n", paste(readLines(file), collapse = "\n"), "\n```\n\n", sep = "")
+}
+for (fl in c("metro_network.R", "notes_tools.R", "analysis.R")) show_code(fl)
+cat("\n\n## Session information\n\n```\n", paste(capture.output(sessionInfo()), collapse = "\n"), "\n```\n", sep = "")
+```
