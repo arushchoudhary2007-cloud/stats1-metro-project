@@ -478,6 +478,7 @@ The `r f(N, 0)` pairs share stations, so we quote no p-values or intervals for p
 - DMRC, official network map (August 2026) and interactive map, accessed 30 October 2026.
 - Spiegelhalter, D. (2019). *The Art of Statistics*. Pelican, pp. 14-15 (the PPDAC cycle).
 - Rokicki, T. et al. (2014). The diameter of the Rubik's Cube group is twenty. *SIAM Rev.* 56.
+- Project repository (station table, R code, cached random networks, report, supplement and slides): <https://github.com/arushchoudhary2007-cloud/stats1-metro-project>
 
 ## Individual contributions
 
