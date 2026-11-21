@@ -29,7 +29,7 @@ A PPDAC study for Statistics I: the fewest stops and the fewest interchanges bet
 3. Run `quarto render delhi_metro_ppdac_report.qmd` and `quarto render delhi_metro_supplement.qmd`. Quarto writes `delhi_metro_ppdac_report.pdf` and `delhi_metro_supplement.pdf`; the submitted copies are those PDFs renamed to `groupN-choudhary-bhagat-swain-report.pdf` and `groupN-choudhary-bhagat-swain-supplement.pdf`.
 4. Run `Rscript presentation_figures.R` to redraw the figures used in the slides.
 
-Without the two `.rds` files the random networks are computed again (about five minutes each). The submitted PDFs were rendered with Quarto 1.11.9, R 4.3.3 and pdfTeX (TeX Live 2023).
+Without the two `.rds` files the random networks are computed again (about five minutes each). The supplement PDF was rendered with Quarto 1.11.9 and the report PDF (re-rendered to add the repository link under References) with Quarto 1.6.42, both with R 4.3.3 and pdfTeX (TeX Live 2023).
 
 ## Data
 
